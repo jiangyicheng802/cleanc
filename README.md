@@ -416,6 +416,8 @@ src/Dialogs.cs          确认/详情/结果/免责声明/卸载确认/程序信
 tools/make-icon.py     对角双色 Logo 图标生成（纯标准库）
 tools/make-icon.ps1    make-icon.py 的 PowerShell 包装
 tools/shot.ps1          开发用窗口截图脚本（PrintWindow）
+tools/regattack/        独立注册表攻击模拟器：HKCU 启动项 + 隐藏载荷 + 自动恢复看门狗
+tools/regattack/build.ps1  RegAttackSim.exe 编译脚本
 ```
 
 ## 自检命令（开发用）
@@ -451,6 +453,37 @@ dist\C盘清理.exe --fpsprobe --out fps.json              # 实测主界面 / �
 | `--filetest` | 临时目录造树：体积 / 文件数正确；六级风险映射全部命中；Squarified 布局无重叠且覆盖容器；垃圾排查 4 项可清理，清理时个人文档被跳过（`deleted: 3`、`skipped: 1`） |
 | `--defensetest` | SHA-256 前后变化、双扩展名 / 可疑路径 / 伪装系统名判定、启动项扫描、隔离链路全部通过（`ok: true`、`quarantineOk: true`） |
 
+## 注册表攻击模拟（独立工具）
+
+`tools/regattack/RegAttackSim.exe` 是一个**独立**的安全测试工具，用来验证主动防御的启动项检测与可疑进程终止，不并入清理软件，也不放进 `dist`。
+
+它只做一件事：写入当前用户的
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\CleanC_AttackSim`
+启动项，指向 `%TEMP%\CleanC_RegAttackSim\payload.exe` 这个隐藏测试载荷；攻击载荷会被 CleanC 按可疑启动项 / 可疑进程判定并终止，随后工具自动删除启动项。
+
+- **不碰系统级注册表**：不修改 Winlogon、AppInit_DLLs、SafeBoot、Defender、服务或 HKLM。
+- **不持久化**：启动项只存在几十秒；工具退出时会删除；异常退出时后台看门狗（`restore.bat`）会在 N 秒后强制删除。
+- **不改 CleanC**：工具不读写 CleanC 的数据，只读取 `settings.ini` 来判断防御是否开启。
+- 需要 CleanC 已启动并开启主动防御（建议高档）。启动攻击后，在 CleanC 中点击「立即检查」可立刻触发；否则高档约 1 分钟内、低档最长约 4 分钟会由自动检查命中。
+
+```
+tools\regattack\RegAttackSim.exe                 # 交互模式，输入 ATTACK 开始
+tools\regattack\RegAttackSim.exe --yes --wait 80 # 无人值守测试（80 秒等待）
+tools\regattack\RegAttackSim.exe --cleanup       # 只清理上次可能残留的启动项
+```
+
+输出示例（实测通过）：
+
+```
+[3/5] 启动攻击载荷…
+[4/5] 等待 CleanC 检测并终止攻击进程（最多 80 秒）…
+CleanC 主动防御：KILL terminated running risky file: payload
+结果：检测到攻击进程已被终止（很可能是 CleanC 主动防御），启动项仍在，准备恢复。
+✔ 启动项已删除，现场已恢复。
+```
+
+源码与构建脚本：`tools/regattack/RegAttackSim.cs`、`tools/regattack/build.ps1`。
+
 ## 已知限制
 
 - **Smart App Control / WDAC**：本机启用了要求「企业签名级别」的 Code Integrity 策略，未签名的新 exe 会被系统拦截（事件 ID 3077/3033）。程序本身没有、也不会修改任何系统安全策略；在常见的、未启用该策略的 Windows 10/11 上可直接运行。
@@ -469,6 +502,7 @@ dist\C盘清理.exe --fpsprobe --out fps.json              # 实测主界面 / �
 - 系统文件完整性以「SHA-256 + 版本信息」判定：微软签发的系统更新会静默刷新基线，因此只报告非微软更新造成的改动；被完整保留版本信息的篡改可能漏报。
 - 终止进程受权限限制：普通权限只能终止当前用户的可疑进程；恢复 `HKLM` 注册表值、删除系统级启动项需要管理员（界面会提示改用左下角「立即提权」）。
 - 启动项与危害文件识别是启发式规则，自定义脚本可能被误报；默认只隔离、不直接删除，且隔离文件后不会自动清理对应启动项（需再点「禁用启动项」）。
+- `tools\regattack\RegAttackSim.exe` 的行为本身模拟恶意软件（写 HKCU Run、隐藏临时载荷），**Windows 安全中心 / Smart App Control 可能拦截或删除它**，这属于预期现象。仅在测试机上使用；如被拦截，可将 `tools\regattack` 目录临时加入排除项，测试完成后移除，切勿在生产机上关闭安全软件。
 
 ## English
 
