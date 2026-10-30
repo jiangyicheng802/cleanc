@@ -119,6 +119,7 @@ namespace CleanC
         public static string MapDialog = "";
 
         private Segmented _viewSeg;
+        private UiButton _settingsBtn;
         private MigratePanel _migrate;
         private FileMapView _map;
         private int _view;
@@ -271,11 +272,22 @@ namespace CleanC
             _viewSeg.Radius = 12f;
             _viewSeg.Accent = Theme.Blue;
             _viewSeg.ItemColors = new Color[] { Theme.Blue, Theme.Cyan };
-            _viewSeg.Bounds = PxRect(W / 2 - 90, 598, 180, 30);
+            _viewSeg.Bounds = PxRect(W / 2 - 138, 598, 180, 30);
             _viewSeg.BackColor = Theme.Bg;
             _viewSeg.SetItems(new string[] { Loc.T("view.normal"), Loc.T("view.file") }, _view);
             _viewSeg.Changed = delegate { SwitchView(_viewSeg.SelectedIndex); };
             Controls.Add(_viewSeg);
+
+            _settingsBtn = new UiButton();
+            _settingsBtn.Primary = false;
+            _settingsBtn.Glyph = "\uE713";
+            _settingsBtn.Text = Loc.T("settings.btn");
+            _settingsBtn.Radius = 10f;
+            _settingsBtn.Bounds = PxRect(W / 2 + 52, 598, 88, 30);
+            _settingsBtn.BackColor = Theme.Bg;
+            _settingsBtn.Click += delegate { OpenSettings(); };
+            Controls.Add(_settingsBtn);
+            _tip.SetToolTip(_settingsBtn, Loc.T("settings.tip"));
 
             _scanBtn = new UiButton();
             _scanBtn.Primary = true;
@@ -391,6 +403,7 @@ namespace CleanC
         {
             bool file = _view == 1;
             _viewSeg.Visible = true;
+            _settingsBtn.Visible = true;
             _tabSeg.Visible = !file;
             _levelSeg.Visible = !file && _tab == 0;
             _modeSeg.Visible = !file && _tab == 1;
@@ -523,6 +536,7 @@ namespace CleanC
             _cancelBtn.Text = Loc.T("btn.cancelScan");
             _cancelBtn.Glyph = "\uE711";
             _viewSeg.Enabled = false;
+            _settingsBtn.Enabled = false;
             _opStart = Environment.TickCount;
             StartSpinner();
             Invalidate();
@@ -561,6 +575,7 @@ namespace CleanC
             StopSpinner();
             _cancelBtn.Visible = false;
             _viewSeg.Enabled = true;
+            _settingsBtn.Enabled = true;
             if (error != null)
             {
                 _mapSub = Loc.F("map.scanError", error.Message);
@@ -663,6 +678,7 @@ namespace CleanC
             _cancelBtn.Text = Loc.T("btn.cancelScan");
             _cancelBtn.Glyph = "\uE711";
             _viewSeg.Enabled = false;
+            _settingsBtn.Enabled = false;
             _opStart = Environment.TickCount;
             StartSpinner();
             Invalidate();
@@ -696,6 +712,7 @@ namespace CleanC
             StopSpinner();
             _cancelBtn.Visible = false;
             _viewSeg.Enabled = true;
+            _settingsBtn.Enabled = true;
             if (ok && error == null)
             {
                 _map.RefreshView();
@@ -732,6 +749,7 @@ namespace CleanC
             _cancelBtn.Text = Loc.T("btn.cancelClean");
             _cancelBtn.Glyph = "\uE711";
             _viewSeg.Enabled = false;
+            _settingsBtn.Enabled = false;
             _opStart = Environment.TickCount;
             StartSpinner();
             Invalidate();
@@ -766,6 +784,7 @@ namespace CleanC
             StopSpinner();
             _cancelBtn.Visible = false;
             _viewSeg.Enabled = true;
+            _settingsBtn.Enabled = true;
             if (outcome != null)
             {
                 for (int i = 0; i < outcome.DeletedNodes.Count; i++)
@@ -1085,6 +1104,7 @@ namespace CleanC
         {
             _splash = null;
             RefreshDisk(true);
+            if (!_demo && !FpsProbe) ShowLetter();
             if (_view == 1)
             {
                 _mapShown = true;
@@ -2341,6 +2361,13 @@ namespace CleanC
 
         // ---------------------------------------------------------------- dialogs
 
+        /// <summary>启动动画结束后弹出“给用户的一封信”。</summary>
+        private void ShowLetter()
+        {
+            WelcomeDialog d = new WelcomeDialog();
+            d.ShowDialog(this);
+        }
+
         private void ShowDemoDialog()
         {
             if (DemoDialog.Length == 0) return;
@@ -2398,6 +2425,16 @@ namespace CleanC
             else if (DemoDialog == "force" && _programs.Count > 0)
             {
                 UninstallDialog d = new UninstallDialog(_programs[0], true);
+                d.ShowDialog(this);
+            }
+            else if (DemoDialog == "settings")
+            {
+                SettingsDialog d = new SettingsDialog(delegate(string code) { ChangeLanguage(code); });
+                d.ShowDialog(this);
+            }
+            else if (DemoDialog == "letter")
+            {
+                WelcomeDialog d = new WelcomeDialog();
                 d.ShowDialog(this);
             }
             else if (DemoDialog == "verify")
@@ -3812,6 +3849,13 @@ namespace CleanC
             Invalidate();
         }
 
+        private void OpenSettings()
+        {
+            SettingsDialog f = new SettingsDialog(delegate(string code) { ChangeLanguage(code); });
+            f.ShowDialog(this);
+            Invalidate();
+        }
+
         private void ChangeLanguage(string code)
         {
             if (code == Loc.Lang) return;
@@ -3933,6 +3977,8 @@ namespace CleanC
                 _cleanBtn.Text = Loc.T("btn.clean");
             }
             _verifyBtn.Text = Loc.T("btn.verify");
+            _settingsBtn.Text = Loc.T("settings.btn");
+            _tip.SetToolTip(_settingsBtn, Loc.T("settings.tip"));
         }
 
         private void SelectAllReg()

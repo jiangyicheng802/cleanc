@@ -1213,6 +1213,185 @@ namespace CleanC
         }
     }
 
+    /// <summary>进入程序后展示的“给用户的一封信”。</summary>
+    public class WelcomeDialog : DialogBase
+    {
+        public WelcomeDialog() : base(Loc.T("letter.title"), 520, 372)
+        {
+            UiButton ok = new UiButton();
+            ok.Primary = true;
+            ok.Text = Loc.T("letter.ok");
+            ok.Radius = 12f;
+            MakeButton(ok, LWidth / 2 - 72, 298, 144, 40);
+            ok.Click += delegate { Close(); };
+        }
+
+        protected override void PaintBody(Graphics g)
+        {
+            RectangleF card = new RectangleF(24, 66, LWidth - 48, 196);
+            Theme.FillRounded(g, Theme.Surface, card, 14f);
+            Theme.StrokeRounded(g, Theme.Border, card, 14f, 1f);
+
+            {
+                Font f = Theme.Font(9f, FontStyle.Regular);
+                Theme.DrawText(g, Loc.T("letter.body1"), f, Theme.Text,
+                    new RectangleF(card.X + 20, card.Y + 14, card.Width - 40, 26), StringAlignment.Near,
+                    StringAlignment.Center);
+            }
+            {
+                Font f = Theme.Font(9f, FontStyle.Regular);
+                Theme.DrawText(g, Loc.T("letter.body2"), f, Theme.Text,
+                    new RectangleF(card.X + 20, card.Y + 42, card.Width - 40, 26), StringAlignment.Near,
+                    StringAlignment.Center);
+            }
+
+            RectangleF bili = new RectangleF(card.X + 20, card.Y + 84, 250, 36);
+            Theme.FillRounded(g, Ui.Alpha(Theme.Blue, 16), bili, 10f);
+            Theme.StrokeRounded(g, Ui.Alpha(Theme.Blue, 40), bili, 10f, 1f);
+            using (SolidBrush b = new SolidBrush(Theme.Blue))
+            {
+                Font gf = Theme.IconFont(13f);
+                g.DrawString("\uE714", gf, b, bili.X + 12, bili.Y + 10);
+            }
+            {
+                Font f = Theme.Font(9.2f, FontStyle.Bold);
+                Theme.DrawText(g, Loc.T("letter.bili"), f, Theme.Blue,
+                    new RectangleF(bili.X + 34, bili.Y, bili.Width - 44, bili.Height), StringAlignment.Near,
+                    StringAlignment.Center);
+            }
+            {
+                Font f = Theme.Font(9.4f, FontStyle.Bold);
+                Theme.DrawText(g, Loc.T("letter.last"), f, Theme.Rose,
+                    new RectangleF(card.X + 20, card.Y + 128, card.Width - 40, 26), StringAlignment.Near,
+                    StringAlignment.Center);
+            }
+            {
+                Font f = Theme.Font(8.4f, FontStyle.Italic);
+                Theme.DrawText(g, Loc.T("letter.sign"), f, Theme.Muted,
+                    new RectangleF(card.X + 20, card.Y + 160, card.Width - 40, 22), StringAlignment.Far,
+                    StringAlignment.Center);
+            }
+        }
+    }
+
+    /// <summary>底部“设置”入口：外观与语言即时生效并写入 settings.ini，另给出设置文件位置。</summary>
+    public class SettingsDialog : DialogBase
+    {
+        private readonly Action<string> _lang;
+        private readonly Segmented _themeSeg;
+        private readonly Segmented _langSeg;
+
+        public SettingsDialog(Action<string> lang) : base(Loc.T("settings.title"), 500, 340)
+        {
+            _lang = lang;
+
+            _themeSeg = new Segmented();
+            _themeSeg.Filled = true;
+            _themeSeg.FontSize = 9.2f;
+            _themeSeg.Radius = 11f;
+            _themeSeg.Accent = Theme.Blue;
+            _themeSeg.ItemColors = new Color[] { Theme.Blue, Theme.Indigo, Theme.Gold };
+            _themeSeg.Bounds = PxRect(24, 100, LWidth - 48, 38);
+            _themeSeg.BackColor = Theme.Bg;
+            _themeSeg.SetItems(new string[]
+            {
+                Loc.T("settings.light"), Loc.T("settings.dark"), Loc.T("settings.gold")
+            }, Theme.Mode == ThemeMode.Light ? 0 : (Theme.Mode == ThemeMode.Dark ? 1 : 2));
+            _themeSeg.Changed = delegate { Theme.Set((ThemeMode)_themeSeg.SelectedIndex, true); };
+            Controls.Add(_themeSeg);
+
+            _langSeg = new Segmented();
+            _langSeg.Filled = true;
+            _langSeg.FontSize = 9.2f;
+            _langSeg.Radius = 11f;
+            _langSeg.Accent = Theme.Blue;
+            _langSeg.ItemColors = new Color[] { Theme.Blue, Theme.Violet, Theme.Cyan };
+            _langSeg.Bounds = PxRect(24, 188, LWidth - 48, 38);
+            _langSeg.BackColor = Theme.Bg;
+            int langIndex = 0;
+            for (int i = 0; i < Loc.Langs.Length; i++)
+            {
+                if (Loc.Langs[i] == Loc.Lang) langIndex = i;
+            }
+            string[] langItems = new string[Loc.Langs.Length];
+            for (int i = 0; i < Loc.Langs.Length; i++) langItems[i] = Loc.LangName(Loc.Langs[i]);
+            _langSeg.SetItems(langItems, langIndex);
+            _langSeg.Changed = delegate
+            {
+                string code = Loc.Langs[_langSeg.SelectedIndex];
+                if (code == Loc.Lang) return;
+                Close();
+                if (_lang != null) _lang(code);
+            };
+            Controls.Add(_langSeg);
+
+            UiButton open = new UiButton();
+            open.Primary = false;
+            open.Glyph = "\uE8B7";
+            open.Text = Loc.T("settings.openDir");
+            open.Radius = 11f;
+            MakeButton(open, LWidth - 24 - 230, 288, 118, 36);
+            open.Click += delegate { OpenSettingsFolder(); };
+
+            UiButton done = new UiButton();
+            done.Primary = true;
+            done.Text = Loc.T("settings.done");
+            done.Radius = 11f;
+            MakeButton(done, LWidth - 24 - 100, 288, 100, 36);
+            done.Click += delegate { Close(); };
+        }
+
+        private static void OpenSettingsFolder()
+        {
+            try
+            {
+                string path = Settings.FilePath;
+                string dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                Process.Start("explorer.exe", "\"" + (string.IsNullOrEmpty(dir) ? path : dir) + "\"");
+            }
+            catch
+            {
+            }
+        }
+
+        protected override void PaintBody(Graphics g)
+        {
+            {
+                Font f = Theme.Font(8.4f, FontStyle.Regular);
+                Theme.DrawText(g, Loc.T("settings.sub"), f, Theme.SubText,
+                    new RectangleF(26, 52, LWidth - 52, 20), StringAlignment.Near, StringAlignment.Center);
+            }
+            {
+                Font f = Theme.Font(9.5f, FontStyle.Bold);
+                Theme.DrawText(g, Loc.T("settings.appearance"), f, Theme.Text,
+                    new RectangleF(26, 72, 200, 24), StringAlignment.Near, StringAlignment.Center);
+            }
+            {
+                Font f = Theme.Font(9.5f, FontStyle.Bold);
+                Theme.DrawText(g, Loc.T("settings.language"), f, Theme.Text,
+                    new RectangleF(26, 160, 200, 24), StringAlignment.Near, StringAlignment.Center);
+            }
+            using (Pen line = new Pen(Theme.Divider, 1f))
+            {
+                g.DrawLine(line, 24, 238, LWidth - 24, 238);
+            }
+            {
+                Font f = Theme.Font(8f, FontStyle.Regular);
+                string text = Loc.F("settings.path", Settings.FilePath);
+                using (StringFormat sf = new StringFormat())
+                {
+                    sf.Trimming = StringTrimming.EllipsisCharacter;
+                    sf.FormatFlags = StringFormatFlags.NoWrap;
+                    using (SolidBrush b = new SolidBrush(Theme.Muted))
+                    {
+                        g.DrawString(text, f, b, new RectangleF(26, 246, LWidth - 52, 26), sf);
+                    }
+                }
+            }
+        }
+    }
+
     public class LangMenuForm : Form
     {
         private readonly Action<string> _pick;

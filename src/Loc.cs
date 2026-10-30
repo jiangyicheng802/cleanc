@@ -988,6 +988,31 @@ namespace CleanC
                 "Advice: protected system or program location; do not touch");
             Add("theme.toGold", "切换到金色主题", "切換到金色主題", "Switch to gold theme");
             Add("splash.made", "make for lemonvia76", "make for lemonvia76", "make for lemonvia76");
+            Add("settings.btn", "设置", "設定", "Settings");
+            Add("settings.tip", "外观、语言与本地设置", "外觀、語言與本機設定", "Appearance, language and local settings");
+            Add("settings.title", "设置", "設定", "Settings");
+            Add("settings.sub", "外观与语言立即生效，并写入本地 settings.ini；下次启动继续沿用。",
+                "外觀與語言立即生效，並寫入本機 settings.ini；下次啟動繼續沿用。",
+                "Appearance and language apply instantly and are saved to settings.ini for next launch.");
+            Add("settings.appearance", "外观", "外觀", "Appearance");
+            Add("settings.light", "浅色", "淺色", "Light");
+            Add("settings.dark", "深色", "深色", "Dark");
+            Add("settings.gold", "金色", "金色", "Gold");
+            Add("settings.language", "语言", "語言", "Language");
+            Add("settings.path", "设置文件：{0}", "設定檔案：{0}", "Settings file: {0}");
+            Add("settings.openDir", "打开目录", "開啟目錄", "Open folder");
+            Add("settings.done", "完成", "完成", "Done");
+            Add("letter.title", "给用户的一封信", "給使用者的一封信", "A Letter to Users");
+            Add("letter.body1", "这个软件我会持续更新，你们想让我更新代码都行。",
+                "這個軟體我會持續更新，你們想讓我更新程式碼都行。",
+                "I'll keep updating this app — you can even ask me to change the code.");
+            Add("letter.body2", "我保证程序免费，软件我已经给你们开源了。",
+                "我保證程式免費，軟體我已經給你們開源了。",
+                "It is guaranteed to stay free, and I have already open-sourced it.");
+            Add("letter.bili", "B 站搜索：lemonvia76", "B 站搜尋：lemonvia76", "Search on Bilibili: lemonvia76");
+            Add("letter.last", "最后：倒卖死全家", "最後：倒賣死全家", "Finally: reselling it? Absolutely not.");
+            Add("letter.sign", "—— lemonvia76", "—— lemonvia76", "—— lemonvia76");
+            Add("letter.ok", "开始使用", "開始使用", "Get started");
 
         }
     }
