@@ -119,6 +119,7 @@ namespace CleanC
         public static string MapDialog = "";
 
         private Segmented _viewSeg;
+        private DefensePanel _defense;
         private FileMapView _map;
         private int _view;
         private bool _mapShown;
@@ -165,7 +166,10 @@ namespace CleanC
             _logoHoverKey = Ui.Key("logoHover");
             _viewSlideKey = Ui.Key("viewSlide");
             _isAdmin = Native.IsAdmin();
-            _tab = StartTab < 0 || StartTab > 2 ? 0 : StartTab;
+            _tab = StartTab < 0 || StartTab > 3 ? 0 : StartTab;
+            DefenseCenter.Init();
+            DefenseCenter.Changed += OnDefenseChanged;
+            DefenseCenter.Alert += OnDefenseAlert;
             _level = (ScanLevel)Math.Max(0, Math.Min(3, StartLevel));
             _view = StartView == 1 ? 1 : 0; // 默认始终进入普通模式，CLI --mode file 可直达文件模式
             Text = Loc.T("app.name");
@@ -204,7 +208,7 @@ namespace CleanC
             _tabSeg.ShowTrack = true;
             _tabSeg.FontSize = 9.2f;
             _tabSeg.Radius = 10f;
-            _tabSeg.Bounds = PxRect(322, 11, 360, 34);
+            _tabSeg.Bounds = PxRect(298, 11, 446, 34);
             _tabSeg.BackColor = Theme.Bg;
             _tabSeg.SetItems(TabLabels(), _tab);
             _tabSeg.Changed = delegate { SwitchTab(_tabSeg.SelectedIndex); };
@@ -316,6 +320,12 @@ namespace CleanC
             _verifyBtn.Click += delegate { RunVerification(); };
             Controls.Add(_verifyBtn);
 
+            _defense = new DefensePanel();
+            _defense.Bounds = PxRect(RightX, 112, RightW, 484);
+            _defense.BackColor = Theme.Bg;
+            _defense.Visible = false;
+            Controls.Add(_defense);
+
             _map = new FileMapView();
             _map.Bounds = PxRect(22, 108, 1136, 458);
             _map.BackColor = Theme.Bg;
@@ -335,10 +345,10 @@ namespace CleanC
             ApplyViewChrome();
         }
 
-        /// <summary>三个页签的文案。初始化与切换语言共用，避免只重建一部分导致页签丢失。</summary>
+        /// <summary>四个页签的文案。初始化与切换语言共用，避免只重建一部分导致页签丢失。</summary>
         private static string[] TabLabels()
         {
-            return new string[] { Loc.T("tab.clean"), Loc.T("tab.uninstall"), Loc.T("tab.registry") };
+            return new string[] { Loc.T("tab.clean"), Loc.T("tab.uninstall"), Loc.T("tab.registry"), Loc.T("tab.defense") };
         }
 
         /// <summary>切换页签时同步分段控件与主按钮状态（不触发加载）。</summary>
@@ -356,10 +366,15 @@ namespace CleanC
                 _scanBtn.Text = Loc.T("uninstall.refresh");
                 _scanBtn.Glyph = "\uE72C";
             }
-            else
+            else if (_tab == 2)
             {
                 _scanBtn.Text = _regItems.Count > 0 ? Loc.T("regtab.rescan") : Loc.T("regtab.scan");
                 _scanBtn.Glyph = "\uE721";
+            }
+            else
+            {
+                _scanBtn.Text = DefenseCenter.Checking ? Loc.T("def.btn.checking") : Loc.T("def.btn.check");
+                _scanBtn.Glyph = "\uE72E";
             }
         }
 
@@ -378,6 +393,7 @@ namespace CleanC
             _list.Visible = !file && _tab == 0 && _display.Count > 0 && !_loadingPrograms;
             _plist.Visible = !file && _tab == 1 && _programs.Count > 0 && !_loadingPrograms;
             _rlist.Visible = !file && _tab == 2 && _regItems.Count > 0;
+            _defense.Visible = !file && _tab == 3;
             if (file)
             {
                 _cleanBtn.Visible = false;
@@ -980,6 +996,7 @@ namespace CleanC
             _viewSeg.Accent = Theme.Blue;
             _viewSeg.ItemColors = new Color[] { Theme.Blue, Theme.Cyan };
             if (_map != null) _map.ApplyTheme();
+            if (_defense != null) _defense.ApplyTheme();
             UpdateThemeTip();
             Invalidate();
         }
@@ -1071,6 +1088,7 @@ namespace CleanC
             {
                 if (_tab == 1) StartLoadPrograms();
                 else if (_tab == 2) StartRegScan();
+                else if (_tab == 3) DefenseCenter.CheckNow();
                 else StartScan();
             }
             else if (_tab == 1)
@@ -1081,6 +1099,11 @@ namespace CleanC
             {
                 SwitchTab(2);
             }
+            else if (_tab == 3)
+            {
+                SwitchTab(3);
+            }
+            DefenseCenter.StartMonitorIfEnabled();
             if (AutoThemeSwitch > 0)
             {
                 Timer t = new Timer();
@@ -1176,6 +1199,8 @@ namespace CleanC
             _list.Visible = tab == 0 && _display.Count > 0 && !_loadingPrograms;
             _plist.Visible = tab == 1 && _programs.Count > 0 && !_loadingPrograms;
             _rlist.Visible = tab == 2 && _regItems.Count > 0;
+            _defense.Visible = tab == 3;
+            if (tab == 3) _defense.Sync();
             _cleanBtn.Visible = false;
             _cancelBtn.Visible = false;
             _verifyBtn.Visible = false;
@@ -1191,9 +1216,13 @@ namespace CleanC
             {
                 _rightSub = _programs.Count > 0 ? BuildProgramSub() : Loc.T("uninstall.subScan");
             }
-            else
+            else if (tab == 2)
             {
                 _rightSub = _regItems.Count > 0 ? BuildRegSub() : Loc.T("regtab.sub");
+            }
+            else
+            {
+                _rightSub = DefenseCenter.StatusLine();
             }
             ApplyTabChrome();
             if (tab == 1 && _programs.Count == 0) StartLoadPrograms();
@@ -1262,7 +1291,8 @@ namespace CleanC
             if (_loadingPrograms) return;
             if (_tab == 0) StartScan();
             else if (_tab == 1) StartLoadPrograms();
-            else StartRegScan();
+            else if (_tab == 2) StartRegScan();
+            else DefenseCenter.CheckNow();
         }
 
         private void StartScan()
@@ -2658,6 +2688,7 @@ namespace CleanC
             }
             if (_view == 1) PaintFileChrome(g);
             else PaintLeft(g);
+
             if (_fpsRunning)
             {
                 _profLeft += Stopwatch.GetTimestamp() - profT;
@@ -2819,11 +2850,25 @@ namespace CleanC
             {
                 Font hf = Theme.Font(11f, FontStyle.Bold);
                 string head = _tab == 0 ? Loc.T("left.disk")
-                    : (_tab == 1 ? Loc.T("left.appsTitle") : Loc.T("regtab.title"));
+                    : (_tab == 1 ? Loc.T("left.appsTitle")
+                    : (_tab == 2 ? Loc.T("regtab.title") : Loc.T("def.leftTitle")));
                 Theme.DrawText(g, head, hf, Theme.Text, new RectangleF(LeftX + 22, LeftY + 18, 220, 24),
                     StringAlignment.Near, StringAlignment.Center);
             }
-            if (_tab != 2)
+            if (_tab == 3)
+            {
+                RectangleF pill = new RectangleF(panel.Right - 78, LeftY + 18, 54, 22);
+                Color pc = DefenseCenter.Enabled ? Theme.Green : Theme.Muted;
+                Theme.FillRounded(g, Ui.Alpha(pc, 18), pill, 11f);
+                {
+                    Font pf = Theme.Font(8.2f, FontStyle.Bold);
+                    string txt = DefenseCenter.Enabled
+                        ? (DefenseCenter.Level == DefenseLevel.High ? Loc.T("def.level.high") : Loc.T("def.level.low"))
+                        : Loc.T("def.status.offShort");
+                    Theme.DrawText(g, txt, pf, pc, pill, StringAlignment.Center, StringAlignment.Center);
+                }
+            }
+            else if (_tab != 2)
             {
                 RectangleF pill = new RectangleF(panel.Right - 64, LeftY + 18, 40, 22);
                 Theme.FillRounded(g, Theme.BlueSoft, pill, 11f);
@@ -2892,7 +2937,7 @@ namespace CleanC
                 DrawStat(g, LeftX + 24, 356, Theme.Green, Loc.T("left.appSize"), Theme.Bytes(bytes));
                 DrawStat(g, LeftX + 24, 382, Theme.Rose, Loc.T("left.appProtected"), prot.ToString());
             }
-            else
+            else if (_tab == 2)
             {
                 int caution = 0;
                 int reboot = 0;
@@ -2904,6 +2949,17 @@ namespace CleanC
                 DrawStat(g, LeftX + 24, 330, Theme.Blue, Loc.T("left.regTotal"), _regItems.Count.ToString());
                 DrawStat(g, LeftX + 24, 356, Theme.Amber, Loc.T("left.regCaution"), caution.ToString());
                 DrawStat(g, LeftX + 24, 382, Theme.Violet, Loc.T("left.regReboot"), reboot.ToString());
+            }
+            else
+            {
+                string lv = DefenseCenter.Enabled
+                    ? (DefenseCenter.Level == DefenseLevel.High ? Loc.T("def.level.high") : Loc.T("def.level.low"))
+                    : "—";
+                DrawStat(g, LeftX + 24, 330, Theme.Teal, Loc.T("def.stat.level"), lv);
+                DrawStat(g, LeftX + 24, 356, Theme.Blue, Loc.T("def.stat.checks"),
+                    DefenseCenter.CheckCount.ToString());
+                DrawStat(g, LeftX + 24, 382, Theme.Rose, Loc.T("def.stat.blocked"),
+                    DefenseCenter.Blocked.ToString());
             }
 
             if (_isAdmin)
@@ -3052,7 +3108,8 @@ namespace CleanC
         private void PaintRightHeader(Graphics g)
         {
             string title = _tab == 0 ? Loc.T("right.title")
-                : (_tab == 1 ? Loc.T("uninstall.title") : Loc.T("regtab.title"));
+                : (_tab == 1 ? Loc.T("uninstall.title")
+                : (_tab == 2 ? Loc.T("regtab.title") : Loc.T("def.title")));
             {
                 Font tf = Theme.Font(15f, FontStyle.Bold);
                 Theme.DrawText(g, title, tf, Theme.Text, new RectangleF(RightX, TitleY, 240, 30),
@@ -3131,7 +3188,7 @@ namespace CleanC
                     }
                 }
             }
-            else
+            else if (_tab == 1)
             {
                 {
                     Font hf = Theme.Font(8f, FontStyle.Regular);
@@ -3145,6 +3202,7 @@ namespace CleanC
 
         private void PaintFooter(Graphics g)
         {
+            if (_tab == 3) return;
             using (Pen line = new Pen(Theme.Divider, 1f))
             {
                 g.DrawLine(line, RightX, 530, RightX + RightW, 530);
@@ -3751,7 +3809,7 @@ namespace CleanC
             Loc.SetLang(code);
             Text = Loc.T("app.name");
             _engine.Relocalize();
-            // 页签先重建：文案变了但数量必须仍是 3 个，否则「残留清理」会被钳掉
+            // 页签先重建：文案变了但数量必须仍是 4 个，否则「防护设置」会被钳掉
             _tabSeg.SetItems(TabLabels(), _tab);
             _levelSeg.SetItems(new string[]
             {
@@ -3770,6 +3828,11 @@ namespace CleanC
                 _map.RefreshView();
                 _mapSub = BuildMapSub();
             }
+            if (_defense != null)
+            {
+                _defense.Relocalize();
+                _defense.Sync();
+            }
             _scanSummary = _lastScan != null ? BuildScanSummary(_lastScan) : "";
             if (_tab == 0 && _lastScan != null) _rightSub = _scanSummary;
             Invalidate();
@@ -3778,6 +3841,11 @@ namespace CleanC
         /// <summary>切换语言后按当前页签重算副标题；注册表页有自己的统计与空状态文案。</summary>
         private void UpdateSubtitleForLanguage()
         {
+            if (_tab == 3)
+            {
+                _rightSub = DefenseCenter.StatusLine();
+                return;
+            }
             if (_tab == 2)
             {
                 if (_regLoading) _rightSub = Loc.T("regtab.scanning");
@@ -3834,6 +3902,10 @@ namespace CleanC
             else if (_tab == 2)
             {
                 _scanBtn.Text = _regItems.Count > 0 ? Loc.T("regtab.rescan") : Loc.T("regtab.scan");
+            }
+            else if (_tab == 3)
+            {
+                _scanBtn.Text = DefenseCenter.Checking ? Loc.T("def.btn.checking") : Loc.T("def.btn.check");
             }
             else
             {
@@ -3898,7 +3970,85 @@ namespace CleanC
             _cancelFlag = true;
             Anim.Stop(_spinKey);
             if (_langMenu != null && !_langMenu.IsDisposed) _langMenu.Close();
+            DefenseCenter.Changed -= OnDefenseChanged;
+            DefenseCenter.Alert -= OnDefenseAlert;
+            DefenseCenter.StopMonitor();
+            ToastForm.CloseAny();
             base.OnFormClosing(e);
+        }
+
+        // ---------------------------------------------------------------- defense
+
+        private void OnDefenseChanged()
+        {
+            if (!IsHandleCreated || IsDisposed) return;
+            try
+            {
+                BeginInvoke(new Action(delegate
+                {
+                    if (IsDisposed) return;
+                    if (_tab == 3)
+                    {
+                        _defense.Sync();
+                        _rightSub = DefenseCenter.StatusLine();
+                        ApplyTabChrome();
+                    }
+                    Invalidate();
+                }));
+            }
+            catch
+            {
+            }
+        }
+
+        private void OnDefenseAlert(DefenseAlert a)
+        {
+            if (!IsHandleCreated || IsDisposed) return;
+            try
+            {
+                BeginInvoke(new Action(delegate { ShowDefenseAlert(a); }));
+            }
+            catch
+            {
+            }
+        }
+
+        private void ShowDefenseAlert(DefenseAlert a)
+        {
+            if (a == null) return;
+            string title = Loc.T("def.toast.title");
+            string body;
+            if (a.NewThreats.Count > 0 && a.Killed.Count > 0)
+                body = Loc.F("def.toast.body", a.NewThreats.Count, a.Killed.Count);
+            else if (a.Killed.Count > 0)
+                body = Loc.F("def.toast.killedOnly", a.Killed.Count);
+            else
+                body = Loc.F("def.toast.bodyOnly", a.NewThreats.Count);
+            try
+            {
+                ToastForm.ShowAlert(this, title, body, delegate { OpenDefenseThreat(); });
+            }
+            catch (Exception ex)
+            {
+                DefenseLog.Write("TOAST", "show failed: " + ex.Message);
+            }
+            Invalidate();
+        }
+
+        private void OpenDefenseThreat()
+        {
+            if (IsDisposed) return;
+            if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
+            Activate();
+            if (_view == 1) SwitchView(0);
+            if (_tab != 3) SwitchTab(3);
+            _defense.Sync();
+            List<Threat> list = DefenseCenter.SnapshotThreats();
+            if (list.Count == 0) return;
+            ThreatDialog d = new ThreatDialog(list[0]);
+            d.ShowDialog(this);
+            _defense.Sync();
+            Invalidate();
         }
     }
 }

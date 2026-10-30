@@ -828,6 +828,153 @@ namespace CleanC
                 "Deleted {0} files, freed {1}, skipped {2}");
             Add("junk.log", "日志：{0}", "記錄：{0}", "Log: {0}");
             Add("junk.doneTitle", "垃圾清理完成", "垃圾清理完成", "Junk cleanup finished");
+
+            // ---- 主动防御
+            Add("tab.defense", "防护设置", "防護設定", "Protection");
+            Add("def.title", "主动防御", "主動防禦", "Active defense");
+            Add("def.leftTitle", "防护状态", "防護狀態", "Protection");
+            Add("def.overview", "实时监控", "即時監控", "Real-time monitoring");
+            Add("def.coverage", "系统文件 · 关键注册表 · 启动项 · 危害文件", "系統檔案 · 關鍵登錄檔 · 啟動項 · 危害檔案",
+                "System files · critical registry · startup · risky files");
+            Add("def.stat.level", "防御档位", "防禦檔位", "Defense level");
+            Add("def.stat.checks", "检查次数", "檢查次數", "Checks");
+            Add("def.toggleOn", "已开启", "已開啟", "On");
+            Add("def.toggleOff", "已关闭", "已關閉", "Off");
+            Add("def.level.label", "档位", "檔位", "Level");
+            Add("def.level.low", "低", "低", "Low");
+            Add("def.level.high", "高", "高", "High");
+            Add("def.level.lowHint", "每 60 秒检查 · 系统文件与关键注册表", "每 60 秒檢查 · 系統檔案與關鍵登錄檔",
+                "Every 60 s · system files and critical registry");
+            Add("def.level.highHint", "每 15 秒检查 · 含启动项与危害文件扫描", "每 15 秒檢查 · 含啟動項與危害檔案掃描",
+                "Every 15 s · adds startup and risky-file scans");
+            Add("def.status.off", "主动防御未开启，系统当前不受监控", "主動防禦未開啟，系統目前不受監控",
+                "Active defense is off; the system is not monitored");
+            Add("def.status.on", "运行中 · {0}档 · 上次检查 {1}", "執行中 · {0}檔 · 上次檢查 {1}",
+                "Running · {0} · last check {1}");
+            Add("def.status.noAdmin", "普通权限（部分处置需要管理员）", "一般權限（部分處置需要管理員）",
+                "Standard user (some actions need admin)");
+            Add("def.status.offShort", "未开启", "未開啟", "Off");
+            Add("def.stat.files", "系统文件", "系統檔案", "System files");
+            Add("def.stat.registry", "注册表项", "登錄檔項", "Registry keys");
+            Add("def.stat.blocked", "已终止进程", "已終止處理程序", "Blocked processes");
+            Add("def.threats.title", "风险项", "風險項", "Risks");
+            Add("def.threats.hint", "点击任意风险查看说明与解决方案", "點擊任一風險查看說明與解決方案",
+                "Open a risk to see details and solutions");
+            Add("def.threats.hintEmpty", "每轮检查覆盖系统文件、关键注册表与启动项", "每輪檢查涵蓋系統檔案、關鍵登錄檔與啟動項",
+                "Every round checks system files, registry and startup items");
+            Add("def.threats.empty", "未发现风险", "未發現風險", "No risks found");
+            Add("def.threats.emptySub", "系统完整性与启动项均正常", "系統完整性與啟動項均正常",
+                "System integrity and startup items look clean");
+            Add("def.threats.offTitle", "主动防御未开启", "主動防禦未開啟", "Active defense is off");
+            Add("def.threats.offSub", "开启后会持续检查系统完整性并拦截篡改", "開啟後會持續檢查系統完整性並攔截篡改",
+                "Turn it on to keep checking system integrity and block tampering");
+            Add("def.threats.offHint", "点击右上角开关立即开启", "點擊右上角開關立即開啟",
+                "Use the switch at the top-right to enable it");
+            Add("def.btn.check", "立即检查", "立即檢查", "Check now");
+            Add("def.btn.checking", "检查中…", "檢查中…", "Checking…");
+            Add("def.btn.baseline", "重建基线", "重建基準", "Rebuild baseline");
+            Add("def.btn.log", "打开日志", "開啟記錄", "Open log");
+            Add("def.btn.fix", "立即修复", "立即修復", "Fix now");
+            Add("def.btn.quarantine", "隔离文件", "隔離檔案", "Quarantine");
+            Add("def.btn.disableStartup", "禁用启动项", "停用啟動項", "Disable startup");
+            Add("def.btn.ignore", "忽略", "忽略", "Ignore");
+            Add("def.baseline.ready", "基线已建立", "基準已建立", "Baseline ready");
+            Add("def.baseline.notReady", "基线未建立", "基準未建立", "No baseline yet");
+            Add("def.checks", "已检查 {0} 次", "已檢查 {0} 次", "{0} checks done");
+            Add("def.baseline.confirmTitle", "重建完整性基线", "重建完整性基準", "Rebuild integrity baseline");
+            Add("def.baseline.confirm1", "将把当前系统文件与关键注册表状态作为新的基线。",
+                "將把目前系統檔案與關鍵登錄檔狀態作為新的基準。",
+                "Current system files and critical registry values will become the new baseline.");
+            Add("def.baseline.confirm2", "如果系统已被篡改，重建会把篡改后的状态当作正常状态，请先确认系统干净。",
+                "如果系統已被篡改，重建會把篡改後的狀態當作正常狀態，請先確認系統乾淨。",
+                "If the system is already tampered with, rebuilding will treat that state as normal. Make sure the system is clean first.");
+            Add("def.baseline.confirmOk", "重建基线", "重建基準", "Rebuild");
+            Add("def.error", "错误：", "錯誤：", "Error: ");
+            Add("def.dialog.title", "风险详情", "風險詳情", "Risk details");
+            Add("def.dialog.solutionTitle", "处理建议", "處理建議", "Suggested fix");
+            Add("def.dialog.open", "打开位置", "開啟位置", "Open location");
+            Add("def.toast.title", "主动防御拦截", "主動防禦攔截", "Active defense alert");
+            Add("def.toast.body", "发现 {0} 项风险，已终止 {1} 个可疑进程", "發現 {0} 項風險，已終止 {1} 個可疑處理程序",
+                "{0} risks found, {1} suspicious processes terminated");
+            Add("def.toast.killedOnly", "已终止 {0} 个可疑进程", "已終止 {0} 個可疑處理程序",
+                "{0} suspicious processes terminated");
+            Add("def.toast.bodyOnly", "发现 {0} 项风险，点击查看解决方案", "發現 {0} 項風險，點擊查看解決方案",
+                "{0} risks found. Click to see solutions");
+            Add("def.toast.view", "查看方案", "查看方案", "View");
+            Add("def.kind.file", "系统文件", "系統檔案", "System file");
+            Add("def.kind.registry", "注册表", "登錄檔", "Registry");
+            Add("def.kind.startup", "启动项", "啟動項", "Startup");
+            Add("def.kind.suspicious", "可疑文件", "可疑檔案", "Suspicious file");
+            Add("def.kind.config", "安全配置", "安全設定", "Security config");
+            Add("def.kind.process", "进程", "處理程序", "Process");
+            Add("def.sev.low", "低风险", "低風險", "Low");
+            Add("def.sev.medium", "中风险", "中風險", "Medium");
+            Add("def.sev.high", "高风险", "高風險", "High");
+            Add("def.value.none", "（空）", "（空）", "(empty)");
+            Add("def.threat.fileTamper", "系统文件被篡改", "系統檔案被篡改", "System file was tampered with");
+            Add("def.detail.fileTamper", "{0} 的指纹与基线不一致：{1} → {2}", "{0} 的指紋與基準不一致：{1} → {2}",
+                "Fingerprint of {0} no longer matches the baseline: {1} → {2}");
+            Add("def.solution.fileTamper", "建议：先用系统文件检查器修复（管理员命令 sfc /scannow）；若仍异常，请从微软官方渠道修复系统组件，并保留日志用于排查。",
+                "建議：先用系統檔案檢查器修復（管理員命令 sfc /scannow）；若仍異常，請從微軟官方管道修復系統元件，並保留記錄用於排查。",
+                "Run sfc /scannow as administrator to repair the file. If it still looks wrong, repair system components from Microsoft, and keep the log for investigation.");
+            Add("def.threat.fileMissing", "系统文件缺失", "系統檔案缺失", "System file is missing");
+            Add("def.detail.fileMissing", "{0} 不存在，可能导致系统不稳定或被替换。", "{0} 不存在，可能導致系統不穩定或被取代。",
+                "{0} does not exist; Windows may be unstable or the file was replaced.");
+            Add("def.solution.fileMissing", "建议：运行 sfc /scannow 修复；若文件位于 System32，请勿从第三方网站下载同名文件。",
+                "建議：執行 sfc /scannow 修復；若檔案位於 System32，請勿從第三方網站下載同名檔案。",
+                "Run sfc /scannow to repair it. Never download a same-name file from third-party sites into System32.");
+            Add("def.threat.regTamper", "关键注册表被修改", "關鍵登錄檔被修改", "Critical registry value changed");
+            Add("def.threat.regTamperName", "关键注册表被修改：{0}", "關鍵登錄檔被修改：{0}", "Critical registry value changed: {0}");
+            Add("def.detail.regTamper", "{0} 当前为 {1}，基线为 {2}", "{0} 目前為 {1}，基準為 {2}", "{0} is now {1}; baseline was {2}");
+            Add("def.detail.regCurrent", "{0} 当前为 {1}", "{0} 目前為 {1}", "{0} is now {1}");
+            Add("def.solution.reg", "建议：点击「立即修复」恢复基线值；若反复被篡改，请断开网络并运行完整杀毒扫描。",
+                "建議：點擊「立即修復」還原基準值；若反覆被篡改，請斷開網路並執行完整防毒掃描。",
+                "Click Fix now to restore the baseline value. If it keeps changing, disconnect from the network and run a full antivirus scan.");
+            Add("def.threat.ifeo", "镜像劫持项：{0}", "映像劫持項：{0}", "Image hijack entry: {0}");
+            Add("def.detail.ifeo", "{0} 的调试器被指向 {1}（位于 {2}），这是常见的劫持手法。",
+                "{0} 的偵錯器被指向 {1}（位於 {2}），這是常見的劫持手法。",
+                "The debugger of {0} points to {1} (under {2}); this is a common hijacking trick.");
+            Add("def.solution.ifeo", "建议：立即删除 Debugger 值，并检查该路径对应的文件是否已被隔离。",
+                "建議：立即刪除 Debugger 值，並檢查該路徑對應的檔案是否已被隔離。",
+                "Remove the Debugger value now, and check whether the file at that path has been quarantined.");
+            Add("def.threat.appinit", "AppInit_DLLs 被注入", "AppInit_DLLs 被注入", "AppInit_DLLs injection");
+            Add("def.detail.appinit", "{0} 的值为 {1}，会在几乎所有进程启动时加载该 DLL。",
+                "{0} 的值為 {1}，會在幾乎所有處理程序啟動時載入該 DLL。",
+                "{0} is set to {1}; this DLL would be loaded into almost every process.");
+            Add("def.threat.defender", "系统安全功能被关闭", "系統安全功能被關閉", "Windows security was disabled");
+            Add("def.detail.defender", "{0} 当前为 {1}，恶意软件常以此关闭实时保护。", "{0} 目前為 {1}，惡意程式常以此關閉即時保護。",
+                "{0} is now {1}; malware often disables real-time protection this way.");
+            Add("def.solution.defender", "建议：点击「立即修复」移除该策略，重启后在 Windows 安全中心重新开启实时保护。",
+                "建議：點擊「立即修復」移除該原則，重新啟動後在 Windows 安全性中心重新開啟即時保護。",
+                "Click Fix now to remove the policy, then restart and re-enable real-time protection in Windows Security.");
+            Add("def.threat.startup", "可疑启动项：{0}", "可疑啟動項：{0}", "Suspicious startup: {0}");
+            Add("def.detail.startup", "{0} 指向 {1}", "{0} 指向 {1}", "{0} points to {1}");
+            Add("def.threat.startupFile", "启动目录里的可执行文件：{0}", "啟動目錄裡的執行檔：{0}", "Executable in Startup folder: {0}");
+            Add("def.detail.startupFile", "{0} 位于启动目录 {1}", "{0} 位於啟動目錄 {1}", "{0} sits in the Startup folder {1}");
+            Add("def.solution.startup", "建议：点击「禁用启动项」；确认文件来源不可信后再隔离。若为自定义软件，请先向软件作者确认。",
+                "建議：點擊「停用啟動項」；確認檔案來源不可信後再隔離。若為自訂軟體，請先向軟體作者確認。",
+                "Disable the startup entry. Quarantine only after confirming the file is untrusted; for custom software, check with its vendor first.");
+            Add("def.threat.file", "可疑可执行文件：{0}", "可疑執行檔：{0}", "Suspicious executable: {0}");
+            Add("def.detail.file", "{0}（目录 {1}，判定：{2}）", "{0}（目錄 {1}，判定：{2}）", "{0} (folder {1}; reason: {2})");
+            Add("def.file.hidden", "隐藏文件", "隱藏檔案", "hidden file");
+            Add("def.file.double", "双扩展名伪装", "雙副檔名偽裝", "double extension");
+            Add("def.file.fake", "伪装系统文件名", "偽裝系統檔名", "fake system name");
+            Add("def.file.scr", "屏幕保护程序格式", "螢幕保護程式格式", "screensaver format");
+            Add("def.solution.file", "建议：点击「隔离文件」移入隔离区；若是自己下载的文件，请从官网重新获取并先做病毒扫描。",
+                "建議：點擊「隔離檔案」移入隔離區；若是自己下載的檔案，請從官網重新取得並先做病毒掃描。",
+                "Quarantine the file. If you downloaded it yourself, re-download from the official site and scan it first.");
+            Add("def.reason.tempPath", "从临时目录运行", "從暫存目錄執行", "runs from a temp folder");
+            Add("def.reason.unsigned", "未签名", "未簽章", "unsigned");
+            Add("def.reason.recent", "最近启动", "最近啟動", "started recently");
+            Add("def.reason.fakeName", "伪装系统进程名", "偽裝系統處理程序名", "fake system process name");
+            Add("def.reason.killed", "已终止", "已終止", "terminated");
+            Add("def.detail.killed", "已终止可疑进程：{0}", "已終止可疑處理程序：{0}", "Suspicious processes terminated: {0}");
+            Add("def.action.ok", "处置完成", "處置完成", "Done");
+            Add("def.action.fail", "处置失败，可能需要管理员权限", "處置失敗，可能需要管理員權限",
+                "Action failed; administrator rights may be required");
+            Add("def.action.missing", "文件已不存在", "檔案已不存在", "The file no longer exists");
+            Add("def.action.quarantined", "已移入隔离区", "已移入隔離區", "Moved to quarantine");
+            Add("def.action.quarantineFail", "隔离失败：{0}", "隔離失敗：{0}", "Quarantine failed: {0}");
         }
     }
 }
