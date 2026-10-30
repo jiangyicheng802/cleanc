@@ -7,7 +7,15 @@ using System.Windows.Forms;
 
 namespace CleanC
 {
-    /// <summary>一套完整的配色。明暗各一份，界面只读 Theme.Xxx，切换时整体替换。</summary>
+    /// <summary>三套外观：浅色 / 深色 / 金色。</summary>
+    public enum ThemeMode
+    {
+        Light = 0,
+        Dark = 1,
+        Gold = 2
+    }
+
+    /// <summary>一套完整的配色。明暗金各一份，界面只读 Theme.Xxx，切换时整体替换。</summary>
     public sealed class Palette
     {
         public bool Dark;
@@ -63,6 +71,8 @@ namespace CleanC
         public Color LogoBase1;
         public Color LogoBase2;
         public Color LogoInk;
+        public Color LogoAccent1;
+        public Color LogoAccent2;
         public Color Flash;
         public Color Box1;
         public Color Box2;
@@ -124,6 +134,8 @@ namespace CleanC
             LogoBase1 = C(255, 255, 255),
             LogoBase2 = C(238, 246, 255),
             LogoInk = C(47, 123, 255),
+            LogoAccent1 = C(47, 123, 255),
+            LogoAccent2 = C(34, 199, 232),
             Flash = C(255, 255, 255),
             Box1 = C(240, 245, 253),
             Box2 = C(205, 220, 242),
@@ -174,6 +186,8 @@ namespace CleanC
             LogoBase1 = C(26, 36, 52),
             LogoBase2 = C(15, 22, 34),
             LogoInk = C(228, 238, 250),
+            LogoAccent1 = C(84, 150, 255),
+            LogoAccent2 = C(56, 212, 240),
             Flash = C(42, 60, 88),
             Box1 = C(44, 58, 80),
             Box2 = C(27, 37, 54),
@@ -182,7 +196,61 @@ namespace CleanC
             TintBoost = 1.35f
         };
 
+        /// <summary>金色外观：奶油白底 + 香槟金强调色，深棕正文，整体偏暖。</summary>
+        public static readonly Palette GoldTheme = new Palette
+        {
+            Dark = false,
+            Bg = C(255, 252, 244),
+            Panel = C(255, 247, 228),
+            PanelBorder = C(244, 228, 190),
+            Card = C(255, 254, 250),
+            CardHover = C(255, 250, 236),
+            Border = C(241, 228, 195),
+            Text = C(52, 41, 22),
+            SubText = C(139, 112, 64),
+            Muted = C(169, 145, 100),
+            Blue = C(198, 148, 32),
+            BlueDeep = C(163, 116, 16),
+            Cyan = C(232, 178, 62),
+            BlueSoft = C(255, 243, 209),
+            Green = C(111, 139, 57),
+            Amber = C(191, 119, 0),
+            Gray = C(139, 124, 96),
+            Red = C(198, 71, 48),
+            Track = C(245, 234, 201),
+            Violet = C(176, 126, 52),
+            Indigo = C(156, 120, 48),
+            Pink = C(214, 150, 90),
+            Sky = C(218, 170, 76),
+            Teal = C(150, 150, 62),
+            Coral = C(214, 126, 80),
+            Rose = C(190, 82, 60),
+            Gold = C(212, 164, 40),
+            Surface = C(255, 252, 242),
+            Sunken = C(253, 247, 232),
+            Hover = C(252, 243, 220),
+            Divider = C(245, 233, 204),
+            BorderStrong = C(224, 202, 156),
+            Faint = C(190, 172, 136),
+            Disabled = C(246, 239, 224),
+            DisabledText = C(190, 176, 148),
+            DangerSoft = C(255, 240, 230),
+            ShadowTint = C(150, 116, 40),
+            LogoBase1 = C(255, 253, 246),
+            LogoBase2 = C(255, 243, 211),
+            LogoInk = C(178, 128, 24),
+            LogoAccent1 = C(226, 176, 54),
+            LogoAccent2 = C(184, 138, 32),
+            Flash = C(255, 251, 237),
+            Box1 = C(253, 246, 227),
+            Box2 = C(236, 216, 170),
+            BoxEdge = C(198, 168, 108),
+            ShadowMul = 1.12f,
+            TintBoost = 1.04f
+        };
+
         private static Palette _p = Light;
+        private static ThemeMode _mode = ThemeMode.Light;
 
         public static float Scale = 1f;
 
@@ -194,9 +262,19 @@ namespace CleanC
             return Color.FromArgb(255, r, gg, b);
         }
 
+        public static ThemeMode Mode
+        {
+            get { return _mode; }
+        }
+
         public static bool IsDark
         {
-            get { return _p.Dark; }
+            get { return _mode == ThemeMode.Dark; }
+        }
+
+        public static bool IsGold
+        {
+            get { return _mode == ThemeMode.Gold; }
         }
 
         public static Color Bg { get { return _p.Bg; } }
@@ -242,6 +320,8 @@ namespace CleanC
         public static Color LogoBase1 { get { return _p.LogoBase1; } }
         public static Color LogoBase2 { get { return _p.LogoBase2; } }
         public static Color LogoInk { get { return _p.LogoInk; } }
+        public static Color LogoAccent1 { get { return _p.LogoAccent1; } }
+        public static Color LogoAccent2 { get { return _p.LogoAccent2; } }
         public static Color Flash { get { return _p.Flash; } }
         public static Color Box1 { get { return _p.Box1; } }
         public static Color Box2 { get { return _p.Box2; } }
@@ -268,9 +348,10 @@ namespace CleanC
         public static void Init()
         {
             string saved = Settings.Get("theme", "");
-            if (string.Equals(saved, "dark", StringComparison.OrdinalIgnoreCase)) Set(true, false);
-            else if (string.Equals(saved, "light", StringComparison.OrdinalIgnoreCase)) Set(false, false);
-            else Set(SystemPrefersDark(), false);
+            if (string.Equals(saved, "dark", StringComparison.OrdinalIgnoreCase)) Set(ThemeMode.Dark, false);
+            else if (string.Equals(saved, "light", StringComparison.OrdinalIgnoreCase)) Set(ThemeMode.Light, false);
+            else if (string.Equals(saved, "gold", StringComparison.OrdinalIgnoreCase)) Set(ThemeMode.Gold, false);
+            else Set(SystemPrefersDark() ? ThemeMode.Dark : ThemeMode.Light, false);
         }
 
         public static bool SystemPrefersDark()
@@ -291,20 +372,28 @@ namespace CleanC
             return false;
         }
 
+        /// <summary>浅色 → 深色 → 金色 → 浅色，循环切换。</summary>
         public static void Toggle()
         {
-            Set(!_p.Dark, true);
+            ThemeMode next = _mode == ThemeMode.Light ? ThemeMode.Dark :
+                (_mode == ThemeMode.Dark ? ThemeMode.Gold : ThemeMode.Light);
+            Set(next, true);
         }
 
-        public static void Set(bool dark, bool persist)
+        public static void Set(ThemeMode mode, bool persist)
         {
-            Palette next = dark ? Dark : Light;
+            Palette next = mode == ThemeMode.Dark ? Dark : (mode == ThemeMode.Gold ? GoldTheme : Light);
+            _mode = mode;
             if (!ReferenceEquals(next, _p))
             {
                 _p = next;
                 ApplyAll();
             }
-            if (persist) Settings.Set("theme", dark ? "dark" : "light");
+            if (persist)
+            {
+                Settings.Set("theme", mode == ThemeMode.Dark ? "dark" :
+                    (mode == ThemeMode.Gold ? "gold" : "light"));
+            }
             if (Changed != null) Changed();
         }
 
@@ -495,7 +584,7 @@ namespace CleanC
                     tp.AddPolygon(tri);
                     using (LinearGradientBrush b = new LinearGradientBrush(
                         new PointF(r.Right, r.Y), new PointF(r.X + r.Width * 0.12f, r.Bottom),
-                        Color.FromArgb(47, 123, 255), Color.FromArgb(34, 199, 232)))
+                        LogoAccent1, LogoAccent2))
                     {
                         g.FillPath(b, tp);
                     }

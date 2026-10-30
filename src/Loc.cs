@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -829,152 +829,166 @@ namespace CleanC
             Add("junk.log", "日志：{0}", "記錄：{0}", "Log: {0}");
             Add("junk.doneTitle", "垃圾清理完成", "垃圾清理完成", "Junk cleanup finished");
 
-            // ---- 主动防御
-            Add("tab.defense", "防护设置", "防護設定", "Protection");
-            Add("def.title", "主动防御", "主動防禦", "Active defense");
-            Add("def.leftTitle", "防护状态", "防護狀態", "Protection");
-            Add("def.overview", "实时监控", "即時監控", "Real-time monitoring");
-            Add("def.coverage", "系统文件 · 关键注册表 · 启动项 · 危害文件", "系統檔案 · 關鍵登錄檔 · 啟動項 · 危害檔案",
-                "System files · critical registry · startup · risky files");
-            Add("def.stat.level", "防御档位", "防禦檔位", "Defense level");
-            Add("def.stat.checks", "检查次数", "檢查次數", "Checks");
-            Add("def.toggleOn", "已开启", "已開啟", "On");
-            Add("def.toggleOff", "已关闭", "已關閉", "Off");
-            Add("def.level.label", "档位", "檔位", "Level");
-            Add("def.level.low", "低", "低", "Low");
-            Add("def.level.high", "高", "高", "High");
-            Add("def.level.lowHint", "每 60 秒检查 · 系统文件与关键注册表", "每 60 秒檢查 · 系統檔案與關鍵登錄檔",
-                "Every 60 s · system files and critical registry");
-            Add("def.level.highHint", "每 15 秒检查 · 含启动项与危害文件扫描", "每 15 秒檢查 · 含啟動項與危害檔案掃描",
-                "Every 15 s · adds startup and risky-file scans");
-            Add("def.status.off", "主动防御未开启，系统当前不受监控", "主動防禦未開啟，系統目前不受監控",
-                "Active defense is off; the system is not monitored");
-            Add("def.status.on", "运行中 · {0}档 · 上次检查 {1}", "執行中 · {0}檔 · 上次檢查 {1}",
-                "Running · {0} · last check {1}");
-            Add("def.status.noAdmin", "普通权限（部分处置需要管理员）", "一般權限（部分處置需要管理員）",
-                "Standard user (some actions need admin)");
-            Add("def.status.offShort", "未开启", "未開啟", "Off");
-            Add("def.stat.files", "系统文件", "系統檔案", "System files");
-            Add("def.stat.registry", "注册表项", "登錄檔項", "Registry keys");
-            Add("def.stat.blocked", "已终止进程", "已終止處理程序", "Blocked processes");
-            Add("def.threats.title", "风险项", "風險項", "Risks");
-            Add("def.threats.hint", "点击任意风险查看说明与解决方案", "點擊任一風險查看說明與解決方案",
-                "Open a risk to see details and solutions");
-            Add("def.threats.hintEmpty", "每轮检查覆盖系统文件、关键注册表与启动项", "每輪檢查涵蓋系統檔案、關鍵登錄檔與啟動項",
-                "Every round checks system files, registry and startup items");
-            Add("def.threats.empty", "未发现风险", "未發現風險", "No risks found");
-            Add("def.threats.emptySub", "系统完整性与启动项均正常", "系統完整性與啟動項均正常",
-                "System integrity and startup items look clean");
-            Add("def.threats.offTitle", "主动防御未开启", "主動防禦未開啟", "Active defense is off");
-            Add("def.threats.offSub", "开启后会持续检查系统完整性并拦截篡改", "開啟後會持續檢查系統完整性並攔截篡改",
-                "Turn it on to keep checking system integrity and block tampering");
-            Add("def.threats.offHint", "点击右上角开关立即开启", "點擊右上角開關立即開啟",
-                "Use the switch at the top-right to enable it");
-            Add("def.btn.check", "立即检查", "立即檢查", "Check now");
-            Add("def.btn.checking", "检查中…", "檢查中…", "Checking…");
-            Add("def.btn.baseline", "重建基线", "重建基準", "Rebuild baseline");
-            Add("def.btn.log", "打开日志", "開啟記錄", "Open log");
-            Add("def.btn.fix", "立即修复", "立即修復", "Fix now");
-            Add("def.btn.quarantine", "隔离文件", "隔離檔案", "Quarantine");
-            Add("def.btn.disableStartup", "禁用启动项", "停用啟動項", "Disable startup");
-            Add("def.btn.ignore", "忽略", "忽略", "Ignore");
-            Add("def.baseline.ready", "基线已建立", "基準已建立", "Baseline ready");
-            Add("def.baseline.notReady", "基线未建立", "基準未建立", "No baseline yet");
-            Add("def.checks", "已检查 {0} 次", "已檢查 {0} 次", "{0} checks done");
-            Add("def.baseline.confirmTitle", "重建完整性基线", "重建完整性基準", "Rebuild integrity baseline");
-            Add("def.baseline.confirm1", "将把当前系统文件与关键注册表状态作为新的基线。",
-                "將把目前系統檔案與關鍵登錄檔狀態作為新的基準。",
-                "Current system files and critical registry values will become the new baseline.");
-            Add("def.baseline.confirm2", "如果系统已被篡改，重建会把篡改后的状态当作正常状态，请先确认系统干净。",
-                "如果系統已被篡改，重建會把篡改後的狀態當作正常狀態，請先確認系統乾淨。",
-                "If the system is already tampered with, rebuilding will treat that state as normal. Make sure the system is clean first.");
-            Add("def.baseline.confirmOk", "重建基线", "重建基準", "Rebuild");
-            Add("def.error", "错误：", "錯誤：", "Error: ");
-            Add("def.dialog.title", "风险详情", "風險詳情", "Risk details");
-            Add("def.dialog.solutionTitle", "处理建议", "處理建議", "Suggested fix");
-            Add("def.dialog.open", "打开位置", "開啟位置", "Open location");
-            Add("def.toast.title", "主动防御拦截", "主動防禦攔截", "Active defense alert");
-            Add("def.toast.body", "发现 {0} 项风险，已终止 {1} 个可疑进程", "發現 {0} 項風險，已終止 {1} 個可疑處理程序",
-                "{0} risks found, {1} suspicious processes terminated");
-            Add("def.toast.killedOnly", "已终止 {0} 个可疑进程", "已終止 {0} 個可疑處理程序",
-                "{0} suspicious processes terminated");
-            Add("def.toast.bodyOnly", "发现 {0} 项风险，点击查看解决方案", "發現 {0} 項風險，點擊查看解決方案",
-                "{0} risks found. Click to see solutions");
-            Add("def.toast.view", "查看方案", "查看方案", "View");
-            Add("def.kind.file", "系统文件", "系統檔案", "System file");
-            Add("def.kind.registry", "注册表", "登錄檔", "Registry");
-            Add("def.kind.startup", "启动项", "啟動項", "Startup");
-            Add("def.kind.suspicious", "可疑文件", "可疑檔案", "Suspicious file");
-            Add("def.kind.config", "安全配置", "安全設定", "Security config");
-            Add("def.kind.process", "进程", "處理程序", "Process");
-            Add("def.sev.low", "低风险", "低風險", "Low");
-            Add("def.sev.medium", "中风险", "中風險", "Medium");
-            Add("def.sev.high", "高风险", "高風險", "High");
-            Add("def.value.none", "（空）", "（空）", "(empty)");
-            Add("def.threat.fileTamper", "系统文件被篡改", "系統檔案被篡改", "System file was tampered with");
-            Add("def.detail.fileTamper", "{0} 的指纹与基线不一致：{1} → {2}", "{0} 的指紋與基準不一致：{1} → {2}",
-                "Fingerprint of {0} no longer matches the baseline: {1} → {2}");
-            Add("def.solution.fileTamper", "建议：先用系统文件检查器修复（管理员命令 sfc /scannow）；若仍异常，请从微软官方渠道修复系统组件，并保留日志用于排查。",
-                "建議：先用系統檔案檢查器修復（管理員命令 sfc /scannow）；若仍異常，請從微軟官方管道修復系統元件，並保留記錄用於排查。",
-                "Run sfc /scannow as administrator to repair the file. If it still looks wrong, repair system components from Microsoft, and keep the log for investigation.");
-            Add("def.threat.fileMissing", "系统文件缺失", "系統檔案缺失", "System file is missing");
-            Add("def.detail.fileMissing", "{0} 不存在，可能导致系统不稳定或被替换。", "{0} 不存在，可能導致系統不穩定或被取代。",
-                "{0} does not exist; Windows may be unstable or the file was replaced.");
-            Add("def.solution.fileMissing", "建议：运行 sfc /scannow 修复；若文件位于 System32，请勿从第三方网站下载同名文件。",
-                "建議：執行 sfc /scannow 修復；若檔案位於 System32，請勿從第三方網站下載同名檔案。",
-                "Run sfc /scannow to repair it. Never download a same-name file from third-party sites into System32.");
-            Add("def.threat.regTamper", "关键注册表被修改", "關鍵登錄檔被修改", "Critical registry value changed");
-            Add("def.threat.regTamperName", "关键注册表被修改：{0}", "關鍵登錄檔被修改：{0}", "Critical registry value changed: {0}");
-            Add("def.detail.regTamper", "{0} 当前为 {1}，基线为 {2}", "{0} 目前為 {1}，基準為 {2}", "{0} is now {1}; baseline was {2}");
-            Add("def.detail.regCurrent", "{0} 当前为 {1}", "{0} 目前為 {1}", "{0} is now {1}");
-            Add("def.solution.reg", "建议：点击「立即修复」恢复基线值；若反复被篡改，请断开网络并运行完整杀毒扫描。",
-                "建議：點擊「立即修復」還原基準值；若反覆被篡改，請斷開網路並執行完整防毒掃描。",
-                "Click Fix now to restore the baseline value. If it keeps changing, disconnect from the network and run a full antivirus scan.");
-            Add("def.threat.ifeo", "镜像劫持项：{0}", "映像劫持項：{0}", "Image hijack entry: {0}");
-            Add("def.detail.ifeo", "{0} 的调试器被指向 {1}（位于 {2}），这是常见的劫持手法。",
-                "{0} 的偵錯器被指向 {1}（位於 {2}），這是常見的劫持手法。",
-                "The debugger of {0} points to {1} (under {2}); this is a common hijacking trick.");
-            Add("def.solution.ifeo", "建议：立即删除 Debugger 值，并检查该路径对应的文件是否已被隔离。",
-                "建議：立即刪除 Debugger 值，並檢查該路徑對應的檔案是否已被隔離。",
-                "Remove the Debugger value now, and check whether the file at that path has been quarantined.");
-            Add("def.threat.appinit", "AppInit_DLLs 被注入", "AppInit_DLLs 被注入", "AppInit_DLLs injection");
-            Add("def.detail.appinit", "{0} 的值为 {1}，会在几乎所有进程启动时加载该 DLL。",
-                "{0} 的值為 {1}，會在幾乎所有處理程序啟動時載入該 DLL。",
-                "{0} is set to {1}; this DLL would be loaded into almost every process.");
-            Add("def.threat.defender", "系统安全功能被关闭", "系統安全功能被關閉", "Windows security was disabled");
-            Add("def.detail.defender", "{0} 当前为 {1}，恶意软件常以此关闭实时保护。", "{0} 目前為 {1}，惡意程式常以此關閉即時保護。",
-                "{0} is now {1}; malware often disables real-time protection this way.");
-            Add("def.solution.defender", "建议：点击「立即修复」移除该策略，重启后在 Windows 安全中心重新开启实时保护。",
-                "建議：點擊「立即修復」移除該原則，重新啟動後在 Windows 安全性中心重新開啟即時保護。",
-                "Click Fix now to remove the policy, then restart and re-enable real-time protection in Windows Security.");
-            Add("def.threat.startup", "可疑启动项：{0}", "可疑啟動項：{0}", "Suspicious startup: {0}");
-            Add("def.detail.startup", "{0} 指向 {1}", "{0} 指向 {1}", "{0} points to {1}");
-            Add("def.threat.startupFile", "启动目录里的可执行文件：{0}", "啟動目錄裡的執行檔：{0}", "Executable in Startup folder: {0}");
-            Add("def.detail.startupFile", "{0} 位于启动目录 {1}", "{0} 位於啟動目錄 {1}", "{0} sits in the Startup folder {1}");
-            Add("def.solution.startup", "建议：点击「禁用启动项」；确认文件来源不可信后再隔离。若为自定义软件，请先向软件作者确认。",
-                "建議：點擊「停用啟動項」；確認檔案來源不可信後再隔離。若為自訂軟體，請先向軟體作者確認。",
-                "Disable the startup entry. Quarantine only after confirming the file is untrusted; for custom software, check with its vendor first.");
-            Add("def.threat.file", "可疑可执行文件：{0}", "可疑執行檔：{0}", "Suspicious executable: {0}");
-            Add("def.detail.file", "{0}（目录 {1}，判定：{2}）", "{0}（目錄 {1}，判定：{2}）", "{0} (folder {1}; reason: {2})");
-            Add("def.file.hidden", "隐藏文件", "隱藏檔案", "hidden file");
-            Add("def.file.double", "双扩展名伪装", "雙副檔名偽裝", "double extension");
-            Add("def.file.fake", "伪装系统文件名", "偽裝系統檔名", "fake system name");
-            Add("def.file.scr", "屏幕保护程序格式", "螢幕保護程式格式", "screensaver format");
-            Add("def.solution.file", "建议：点击「隔离文件」移入隔离区；若是自己下载的文件，请从官网重新获取并先做病毒扫描。",
-                "建議：點擊「隔離檔案」移入隔離區；若是自己下載的檔案，請從官網重新取得並先做病毒掃描。",
-                "Quarantine the file. If you downloaded it yourself, re-download from the official site and scan it first.");
-            Add("def.reason.tempPath", "从临时目录运行", "從暫存目錄執行", "runs from a temp folder");
-            Add("def.reason.unsigned", "未签名", "未簽章", "unsigned");
-            Add("def.reason.recent", "最近启动", "最近啟動", "started recently");
-            Add("def.reason.fakeName", "伪装系统进程名", "偽裝系統處理程序名", "fake system process name");
-            Add("def.reason.killed", "已终止", "已終止", "terminated");
-            Add("def.detail.killed", "已终止可疑进程：{0}", "已終止可疑處理程序：{0}", "Suspicious processes terminated: {0}");
-            Add("def.action.ok", "处置完成", "處置完成", "Done");
-            Add("def.action.fail", "处置失败，可能需要管理员权限", "處置失敗，可能需要管理員權限",
-                "Action failed; administrator rights may be required");
-            Add("def.action.missing", "文件已不存在", "檔案已不存在", "The file no longer exists");
-            Add("def.action.quarantined", "已移入隔离区", "已移入隔離區", "Moved to quarantine");
-            Add("def.action.quarantineFail", "隔离失败：{0}", "隔離失敗：{0}", "Quarantine failed: {0}");
+            // ---- 应用搬家
+            Add("tab.migrate", "应用搬家", "應用搬家", "App move");
+            Add("migrate.title", "AppData 搬家", "AppData 搬家", "AppData relocation");
+            Add("migrate.leftTitle", "搬家状态", "搬家狀態", "Relocation");
+            Add("migrate.sub", "把 AppData 中的大目录搬到其他磁盘，原位置保留目录联接，软件照常读写",
+                "把 AppData 中的大目錄搬到其他磁碟，原位置保留目錄聯接，軟體照常讀寫",
+                "Move large AppData folders to another drive and leave a junction behind");
+            Add("migrate.subEmpty", "选好目标磁盘后，勾选要搬家的应用数据目录", "選好目標磁碟後，勾選要搬家的應用資料目錄",
+                "Pick a target drive, then select the app data folders to move");
+            Add("migrate.scanning", "正在统计 AppData 目录体积…", "正在統計 AppData 目錄體積…", "Measuring AppData folders…");
+            Add("migrate.scan", "扫描目录", "掃描目錄", "Scan folders");
+            Add("migrate.rescan", "重新统计", "重新統計", "Rescan");
+            Add("migrate.moving", "正在搬家：{0}", "正在搬家：{0}", "Moving: {0}");
+            Add("migrate.restoring", "正在还原：{0}", "正在還原：{0}", "Restoring: {0}");
+            Add("migrate.done", "已搬家 {0} 项，释放 C 盘 {1}", "已搬家 {0} 項，釋放 C 盤 {1}",
+                "Moved {0} folders, freed {1} on C:");
+            Add("migrate.restoreDone", "已还原 {0} 项，数据回到 C 盘", "已還原 {0} 項，資料回到 C 盤",
+                "Restored {0} folders back to C:");
+            Add("migrate.none", "没有找到可搬家的应用数据目录", "沒有找到可搬家的應用資料目錄",
+                "No relocatable AppData folders found");
+            Add("migrate.noDisk", "未检测到其他本地磁盘，请先接入一块非 C 盘的固定磁盘",
+                "未偵測到其他本機磁碟，請先接入一塊非 C 盤的固定磁碟",
+                "No other fixed drive detected; connect a local disk other than C:");
+            Add("migrate.target", "目标位置", "目標位置", "Target");
+            Add("migrate.scope.local", "本地", "本機", "Local");
+            Add("migrate.scope.roaming", "漫游", "漫遊", "Roaming");
+            Add("migrate.scope.all", "全部", "全部", "All");
+            Add("migrate.targetChange", "更改", "變更", "Change");
+            Add("migrate.selectAll", "全选", "全選", "Select all");
+            Add("migrate.selected", "已选 {0} 项", "已選 {0} 項", "{0} selected");
+            Add("migrate.btnMove", "搬家所选", "搬家所選", "Move selected");
+            Add("migrate.btnRestore", "还原所选", "還原所選", "Restore selected");
+            Add("migrate.btnOpen", "打开位置", "開啟位置", "Open location");
+            Add("migrate.btnLog", "打开日志", "開啟記錄", "Open log");
+            Add("migrate.state.normal", "可搬家", "可搬家", "Ready");
+            Add("migrate.state.moved", "已搬家", "已搬家", "Moved");
+            Add("migrate.state.link", "外部联接", "外部聯接", "External link");
+            Add("migrate.state.busy", "使用中", "使用中", "In use");
+            Add("migrate.busyHint", "该目录可能正被程序占用，请先退出应用再搬家",
+                "該目錄可能正被程式佔用，請先退出應用再搬家",
+                "This folder may be in use; close the app before moving it");
+            Add("migrate.files", "{0} 个文件", "{0} 個檔案", "{0} files");
+            Add("migrate.linkTo", "联接 → {0}", "聯接 → {0}", "Junction → {0}");
+            Add("migrate.confirmTitle", "确认搬家", "確認搬家", "Confirm move");
+            Add("migrate.confirm1", "将把 {0} 复制到 {1}，并把原目录替换为目录联接。",
+                "將把 {0} 複製到 {1}，並把原目錄取代為目錄聯接。",
+                "{0} will be copied to {1} and replaced with a directory junction.");
+            Add("migrate.confirm2", "搬家前请完全退出该应用及其后台进程；文件被占用会导致失败。",
+                "搬家前請完全退出該應用及其背景程序；檔案被佔用會導致失敗。",
+                "Fully close the app and its background processes first; locked files will make the move fail.");
+            Add("migrate.confirmOk", "开始搬家", "開始搬家", "Start move");
+            Add("migrate.restoreConfirmTitle", "确认还原", "確認還原", "Confirm restore");
+            Add("migrate.restoreConfirm1", "将删除原位置的目录联接，并把数据从 {0} 移回 C 盘。",
+                "將刪除原位置的目錄聯接，並把資料從 {0} 移回 C 盤。",
+                "The junction will be removed and data moved back from {0} to C:");
+            Add("migrate.restoreConfirmOk", "开始还原", "開始還原", "Start restore");
+            Add("migrate.error", "操作失败：{0}", "操作失敗：{0}", "Operation failed: {0}");
+            Add("migrate.notEnough", "目标磁盘空间不足，至少需要 {0}", "目標磁碟空間不足，至少需要 {0}",
+                "Not enough space on the target drive; at least {0} is required");
+            Add("migrate.sameDrive", "目标位置不能位于 C 盘", "目標位置不能位於 C 盤", "Target cannot be on C:");
+            Add("migrate.log", "日志：{0}", "記錄：{0}", "Log: {0}");
+            Add("migrate.stat.count", "可搬家目录", "可搬家目錄", "Folders");
+            Add("migrate.stat.moved", "已搬家", "已搬家", "Moved");
+            Add("migrate.stat.freed", "已释放", "已釋放", "Freed");
+            Add("migrate.stat.target", "目标磁盘", "目標磁碟", "Target drive");
+            Add("migrate.warnAdmin", "部分目录需要管理员权限，可点击左下角提权", "部分目錄需要管理員權限，可點擊左下角提權",
+                "Some folders need admin rights; elevate from the left panel");
+            Add("migrate.scanDone", "共 {0} 个目录，其中 {1} 个可搬家", "共 {0} 個目錄，其中 {1} 個可搬家",
+                "{0} folders found, {1} can be moved");
+            Add("migrate.dlg.title", "选择搬家目标", "選擇搬家目標", "Choose target");
+            Add("migrate.dlg.free", "可用 {0}", "可用 {0}", "{0} free");
+            Add("migrate.dlg.custom", "选择其他文件夹…", "選擇其他資料夾…", "Choose another folder…");
+            Add("migrate.dlg.ok", "使用此位置", "使用此位置", "Use this location");
+            Add("migrate.dlg.needDisk", "没有其他可用磁盘", "沒有其他可用磁碟", "No other drive available");
+            Add("migrate.dlg.hint", "搬家后原目录会变成指向目标位置的目录联接，卸载本程序不会影响联接。",
+                "搬家後原目錄會變成指向目標位置的目錄聯接，解除安裝本程式不會影響聯接。",
+                "After moving, the original folder becomes a junction to the target. Uninstalling CleanC will not break it.");
+            Add("migrate.progress.copy", "复制文件", "複製檔案", "Copying files");
+            Add("migrate.progress.verify", "校验副本", "校驗副本", "Verifying copy");
+            Add("migrate.progress.link", "建立目录联接", "建立目錄聯接", "Creating junction");
+            Add("migrate.progress.clean", "删除原目录", "刪除原目錄", "Removing original");
+            Add("migrate.progress.restore", "移回 C 盘", "移回 C 盤", "Moving back");
+
+            // ---- 文件类型说明（文件模式悬停卡）
+            Add("filekind.name.cache", "缓存数据", "快取資料", "Cache data");
+            Add("filekind.name.temp", "临时文件", "暫存檔案", "Temporary file");
+            Add("filekind.name.log", "日志文件", "記錄檔", "Log file");
+            Add("filekind.name.dump", "崩溃转储", "崩潰傾印", "Crash dump");
+            Add("filekind.name.thumb", "缩略图缓存", "縮圖快取", "Thumbnail cache");
+            Add("filekind.name.font", "字体缓存", "字型快取", "Font cache");
+            Add("filekind.name.prefetch", "预读取数据", "預讀取資料", "Prefetch data");
+            Add("filekind.name.update", "更新缓存", "更新快取", "Update cache");
+            Add("filekind.name.recycle", "回收站文件", "回收站檔案", "Recycle Bin item");
+            Add("filekind.name.backup", "备份/旧版本", "備份/舊版本", "Backup / old copy");
+            Add("filekind.name.installer", "安装包缓存", "安裝包快取", "Installer cache");
+            Add("filekind.name.binary", "可执行文件", "執行檔", "Executable");
+            Add("filekind.name.config", "配置/数据库", "設定/資料庫", "Config / database");
+            Add("filekind.name.document", "个人文档", "個人文件", "Personal document");
+            Add("filekind.name.other", "其他文件", "其他檔案", "Other file");
+            Add("filekind.desc.cache", "软件运行时写下的缓存，用来加速启动与显示。删除后软件会按需重新生成，不影响登录状态与个人设置。",
+                "軟體執行時寫下的快取，用來加速啟動與顯示。刪除後軟體會按需重新產生，不影響登入狀態與個人設定。",
+                "Cache written by the app to speed up startup and rendering. It is rebuilt on demand; sign-in state and settings are not affected.");
+            Add("filekind.desc.temp", "临时中间文件，程序退出后一般不再需要；如果正被程序占用会跳过。",
+                "暫存中間檔案，程式結束後一般不再需要；如果正被程式佔用會略過。",
+                "Temporary intermediate files that are usually no longer needed after the app exits; locked ones are skipped.");
+            Add("filekind.desc.log", "运行日志与诊断记录，用于排查错误。清理不影响软件功能，但会丢失历史故障记录。",
+                "執行記錄與診斷記錄，用於排查錯誤。清理不影響軟體功能，但會遺失歷史故障記錄。",
+                "Runtime and diagnostic logs used for troubleshooting. Cleaning does not break the app, but older incident history is lost.");
+            Add("filekind.desc.dump", "程序或系统崩溃时生成的内存快照，主要用于分析蓝屏与崩溃，普通使用可安全清理。",
+                "程式或系統崩潰時產生的記憶體快照，主要用於分析藍屏與崩潰，一般使用可安全清理。",
+                "A memory snapshot from a crash, mainly used for blue-screen and crash analysis; safe to clean for normal users.");
+            Add("filekind.desc.thumb", "资源管理器缩略图缓存，删除后下次打开文件夹会自动重建，可能短暂变慢。",
+                "檔案總管縮圖快取，刪除後下次開啟資料夾會自動重建，可能短暫變慢。",
+                "Explorer thumbnail cache. It is rebuilt automatically the next time you open a folder, which may be briefly slower.");
+            Add("filekind.desc.font", "系统字体缓存，删除后会自动重建；重建期间首次打开字体相关界面可能稍慢。",
+                "系統字型快取，刪除後會自動重建；重建期間首次開啟字型相關介面可能稍慢。",
+                "System font cache. It rebuilds automatically; the first font-heavy screen afterwards may be slightly slower.");
+            Add("filekind.desc.prefetch", "Windows 预读取数据，用于加快常用程序启动，删除后会自动重新生成。",
+                "Windows 預讀取資料，用於加快常用程式啟動，刪除後會自動重新產生。",
+                "Windows prefetch data used to speed up common programs. It regenerates automatically after deletion.");
+            Add("filekind.desc.update", "Windows 更新下载与交付优化缓存，删除不会卸载已安装的更新。",
+                "Windows 更新下載與傳遞最佳化快取，刪除不會解除安裝已安裝的更新。",
+                "Windows Update download and Delivery Optimization cache. Deleting it does not uninstall updates that are already installed.");
+            Add("filekind.desc.recycle", "回收站中的文件，清空后无法恢复，请先确认没有需要找回的内容。",
+                "資源回收筒中的檔案，清空後無法復原，請先確認沒有需要找回的內容。",
+                "Files in the Recycle Bin. Emptying it cannot be undone, so make sure nothing needs to be recovered first.");
+            Add("filekind.desc.backup", "旧版本、备份或升级前的副本，确认当前版本稳定后可清理。",
+                "舊版本、備份或升級前的副本，確認目前版本穩定後可清理。",
+                "Old versions, backups or pre-upgrade copies. Clean them after confirming the current version works well.");
+            Add("filekind.desc.installer", "安装/修复组件缓存，用于修复和卸载软件；删除会延长后续修复或卸载时间，但一般不影响已安装程序运行。",
+                "安裝/修復元件快取，用於修復和解除安裝軟體；刪除會延長後續修復或解除安裝時間，但一般不影響已安裝程式執行。",
+                "Installer and repair component cache. Removing it slows later repair or uninstall, but normally does not affect installed apps.");
+            Add("filekind.desc.binary", "可执行文件或程序组件，删除可能导致对应软件无法启动，除非确认是残留文件。",
+                "執行檔或程式元件，刪除可能導致對應軟體無法啟動，除非確認是殘留檔案。",
+                "Executable or program component. Deleting it may stop the related app from launching unless it is confirmed leftover.");
+            Add("filekind.desc.config", "配置文件或数据库，保存账号、设置与使用记录；删除可能丢失配置，建议保留。",
+                "設定檔或資料庫，保存帳號、設定與使用記錄；刪除可能遺失設定，建議保留。",
+                "Configuration or database storing accounts, settings and history. Deleting it may lose configuration; keep it by default.");
+            Add("filekind.desc.document", "个人文档或媒体文件，可能包含重要数据，清理流程会始终跳过。",
+                "個人文件或媒體檔案，可能包含重要資料，清理流程會始終略過。",
+                "Personal document or media file that may hold important data. Cleanup always skips it.");
+            Add("filekind.desc.other", "未能识别的文件类型，建议先确认用途再处理。", "未能辨識的檔案類型，建議先確認用途再處理。",
+                "Unrecognized file type. Check what it is used for before taking action.");
+            Add("map.tip.kind", "类型", "類型", "Type");
+            Add("map.tip.cat", "分类", "分類", "Category");
+            Add("map.tip.modified", "修改", "修改", "Modified");
+            Add("map.tip.dir", "目录", "目錄", "Folder");
+            Add("map.tip.file", "文件", "檔案", "File");
+            Add("map.tip.dirSummary", "含 {0} 个文件 · 可清理 {1} · 谨慎 {2} · 勿动 {3}",
+                "含 {0} 個檔案 · 可清理 {1} · 謹慎 {2} · 勿動 {3}",
+                "{0} files · cleanable {1} · caution {2} · keep {3}");
+            Add("map.tip.kinds", "主要类型：{0}", "主要類型：{0}", "Main types: {0}");
+            Add("map.advice.safe", "建议：可直接清理", "建議：可直接清理", "Advice: safe to clean");
+            Add("map.advice.caution", "建议：确认后清理", "建議：確認後清理", "Advice: clean after checking");
+            Add("map.advice.risky", "建议：不要删除", "建議：不要刪除", "Advice: do not delete");
+            Add("map.advice.forbidden", "建议：系统或程序关键位置，禁止操作", "建議：系統或程式關鍵位置，禁止操作",
+                "Advice: protected system or program location; do not touch");
+            Add("theme.toGold", "切换到金色主题", "切換到金色主題", "Switch to gold theme");
+            Add("splash.made", "make for lemonvia76", "make for lemonvia76", "make for lemonvia76");
+
         }
     }
 }

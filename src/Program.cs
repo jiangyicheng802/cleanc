@@ -17,8 +17,9 @@ namespace CleanC
             Application.SetCompatibleTextRenderingDefault(false);
             Loc.Init();
             string themeArg = ArgValue(args, "--theme");
-            if (string.Equals(themeArg, "dark", StringComparison.OrdinalIgnoreCase)) Theme.Set(true, false);
-            else if (string.Equals(themeArg, "light", StringComparison.OrdinalIgnoreCase)) Theme.Set(false, false);
+            if (string.Equals(themeArg, "dark", StringComparison.OrdinalIgnoreCase)) Theme.Set(ThemeMode.Dark, false);
+            else if (string.Equals(themeArg, "light", StringComparison.OrdinalIgnoreCase)) Theme.Set(ThemeMode.Light, false);
+            else if (string.Equals(themeArg, "gold", StringComparison.OrdinalIgnoreCase)) Theme.Set(ThemeMode.Gold, false);
             else Theme.Init();
             float dpiScale = Native.SystemScale();
             Rectangle wa = Screen.PrimaryScreen.WorkingArea;
@@ -79,9 +80,9 @@ namespace CleanC
             {
                 Environment.Exit(RunFileTest(OutPath(args, "filetest.json")));
             }
-            if (Has(args, "--defensetest"))
+            if (Has(args, "--migratetest"))
             {
-                Environment.Exit(RunDefenseTest(OutPath(args, "defensetest.json")));
+                Environment.Exit(RunMigrateTest(OutPath(args, "migratetest.json")));
             }
             string modeArg = ArgValue(args, "--mode");
             if (string.Equals(modeArg, "file", StringComparison.OrdinalIgnoreCase)) MainForm.StartView = 1;
@@ -102,14 +103,6 @@ namespace CleanC
             MainForm.StartLevel = level;
             string themeSwitch = ArgValue(args, "--autotheme");
             if (themeSwitch.Length > 0) int.TryParse(themeSwitch, out MainForm.AutoThemeSwitch);
-            string defenseLv = ArgValue(args, "--defenselevel");
-            if (defenseLv.Length > 0)
-            {
-                int dl = 1;
-                int.TryParse(defenseLv, out dl);
-                Settings.Set("defense.level", dl <= 0 ? "0" : "1");
-            }
-            if (Has(args, "--defensenable")) Settings.Set("defense.enabled", "1");
             MainForm.StartTab = TabArg(args);
             if (Has(args, "--slowsplash")) SplashOverlay.TimeScale = 0.3f;
             Native.BeginHighResolution();
@@ -968,98 +961,38 @@ namespace CleanC
             checks.Add(c);
         }
 
-        /// <summary>主动防御自检：哈希、规则判定、启动项扫描、签名探针。</summary>
-        private static int RunDefenseTest(string outPath)
+        /// <summary>应用搬家自检：复制 → 目录联接 → 经联接读回 → 还原复制。</summary>
+        private static int RunMigrateTest(string outPath)
         {
-            int code = 0;
             StringBuilder json = new StringBuilder();
-            string root = Path.Combine(Path.GetTempPath(), "CleanC_defense_" + Guid.NewGuid().ToString("N"));
-            json.Append("{\n  \"mode\": \"defensetest\",\n");
+            int code = 0;
+            string root = Path.Combine(Path.GetTempPath(), "CleanC_migrate_" + Guid.NewGuid().ToString("N"));
             try
             {
-                Directory.CreateDirectory(root);
-                string probe = Path.Combine(root, "probe.bin");
-                File.WriteAllText(probe, "baseline");
-                string h1 = IntegritySurvey.HashFile(probe);
-                File.WriteAllText(probe, "tampered");
-                string h2 = IntegritySurvey.HashFile(probe);
-                bool hashOk = h1.Length == 64 && h2.Length == 64 && !string.Equals(h1, h2, StringComparison.Ordinal);
-
-                bool doubleExt = DefenseRules.HasDoubleExtension(Path.Combine(root, "invoice.pdf.exe"));
-                bool plainExe = !DefenseRules.HasDoubleExtension(Path.Combine(root, "invoice.exe"));
-                bool suspicious = DefenseRules.IsSuspiciousPath(@"C:\Users\Sample\AppData\Local\Temp\evil.exe");
-                bool programFiles = !DefenseRules.IsSuspiciousPath(@"C:\Program Files\App\app.exe");
-                string cmd = "\"C:\\Users\\Sample\\AppData\\Local\\Temp\\evil.exe\" -silent";
-                string target = DefenseRules.ExtractTarget(cmd);
-                bool targetOk = PathUtil.Norm(target) == PathUtil.Norm(@"C:\Users\Sample\AppData\Local\Temp\evil.exe");
-                bool fake = DefenseRules.ImpersonatesSystem(@"C:\Users\Sample\AppData\Local\Temp\svchost.exe");
-                bool realSys = !DefenseRules.ImpersonatesSystem(Path.Combine(Environment.SystemDirectory, "svchost.exe"));
-                bool signed = DefenseSignature.Verify(Path.Combine(Environment.SystemDirectory, "kernel32.dll"));
-                bool msUpdate = MsUpdateProbe();
-
-                int startup = 0;
-                bool scanOk = true;
-                string scanError = "";
-                try { startup = HazardScanner.Scan(DefenseLevel.High, true).Count; }
-                catch (Exception ex) { scanOk = false; scanError = ex.Message; }
-
-                // 处置链路：隔离文件 → 源文件消失 → 清理隔离区探针
-                bool quarantineOk = false;
-                try
-                {
-                    string qsrc = Path.Combine(root, "CleanC_qprobe.exe");
-                    File.WriteAllText(qsrc, "probe");
-                    Threat qt = new Threat();
-                    qt.Kind = ThreatKind.SuspiciousFile;
-                    qt.Target = qsrc;
-                    qt.Fix = ThreatFix.QuarantineFile;
-                    qt.Id = "qtest";
-                    qt.Title = "quarantine probe";
-                    string qmsg;
-                    quarantineOk = DefenseCenter.Quarantine(qt, out qmsg) && !File.Exists(qsrc);
-                    string[] qfiles = Directory.GetFiles(DefensePaths.QuarantineDir, "*CleanC_qprobe.exe.quarantined");
-                    for (int i = 0; i < qfiles.Length; i++) File.Delete(qfiles[i]);
-                }
-                catch
-                {
-                    quarantineOk = false;
-                }
-
-                bool baselineExists = IntegritySurvey.BaselineExists();
-                bool ok = hashOk && doubleExt && plainExe && suspicious && programFiles && targetOk && fake
-                    && realSys && msUpdate && scanOk && quarantineOk;
-                if (!ok) code = 1;
-
-                json.Append("  \"hashChanged\": ").Append(hashOk ? "true" : "false").Append(",\n");
-                json.Append("  \"doubleExtension\": ").Append(doubleExt ? "true" : "false").Append(",\n");
-                json.Append("  \"plainExeClean\": ").Append(plainExe ? "true" : "false").Append(",\n");
-                json.Append("  \"tempSuspicious\": ").Append(suspicious ? "true" : "false").Append(",\n");
-                json.Append("  \"programFilesTrusted\": ").Append(programFiles ? "true" : "false").Append(",\n");
-                json.Append("  \"extractTarget\": \"").Append(Escape(target)).Append("\",\n");
-                json.Append("  \"targetOk\": ").Append(targetOk ? "true" : "false").Append(",\n");
-                json.Append("  \"fakeSystemName\": ").Append(fake ? "true" : "false").Append(",\n");
-                json.Append("  \"realSystemName\": ").Append(realSys ? "true" : "false").Append(",\n");
-                json.Append("  \"kernel32Signed\": ").Append(signed ? "true" : "false").Append(",\n");
-                json.Append("  \"microsoftUpdateProbe\": ").Append(msUpdate ? "true" : "false").Append(",\n");
-                json.Append("  \"startupItems\": ").Append(startup).Append(",\n");
-                json.Append("  \"startupScanOk\": ").Append(scanOk ? "true" : "false").Append(",\n");
-                json.Append("  \"quarantineOk\": ").Append(quarantineOk ? "true" : "false").Append(",\n");
-                json.Append("  \"baselineExists\": ").Append(baselineExists ? "true" : "false").Append(",\n");
-                json.Append("  \"ok\": ").Append(ok ? "true" : "false");
-                if (scanError.Length > 0) json.Append(",\n  \"scanError\": \"").Append(Escape(scanError)).Append("\"");
+                MigrateOps.MigrateTestReport r = MigrateOps.SelfTest(root);
+                if (!r.Ok) code = 1;
+                json.Append("{\n  \"mode\": \"migratetest\",\n");
+                json.Append("  \"copyOk\": ").Append(r.CopyOk ? "true" : "false").Append(",\n");
+                json.Append("  \"junctionOk\": ").Append(r.JunctionOk ? "true" : "false").Append(",\n");
+                json.Append("  \"linkReadOk\": ").Append(r.LinkReadOk ? "true" : "false").Append(",\n");
+                json.Append("  \"restoreOk\": ").Append(r.RestoreOk ? "true" : "false").Append(",\n");
+                json.Append("  \"bytes\": ").Append(r.Bytes).Append(",\n");
+                json.Append("  \"ok\": ").Append(r.Ok ? "true" : "false");
+                if (r.Error.Length > 0)
+                    json.Append(",\n  \"error\": \"").Append(Escape(r.Error)).Append("\"");
                 json.Append("\n}\n");
             }
             catch (Exception ex)
             {
                 code = 1;
                 json.Length = 0;
-                json.Append("{\"mode\":\"defensetest\",\"error\":\"").Append(Escape(ex.ToString())).Append("\"}");
+                json.Append("{\"mode\":\"migratetest\",\"ok\":false,\"error\":\"").Append(Escape(ex.ToString())).Append("\"}");
             }
             finally
             {
                 try
                 {
-                    if (Directory.Exists(root)) Directory.Delete(root, true);
+                    if (Directory.Exists(root)) MigrateOps.DeleteTree(root);
                 }
                 catch
                 {
@@ -1067,23 +1000,6 @@ namespace CleanC
             }
             WriteJson(outPath, json.ToString());
             return code;
-        }
-
-        /// <summary>用系统目录里的 kernel32.dll 版本信息验证「微软更新」白名单逻辑。</summary>
-        private static bool MsUpdateProbe()
-        {
-            try
-            {
-                string path = Path.Combine(Environment.SystemDirectory, "kernel32.dll");
-                if (!File.Exists(path)) return false;
-                System.Diagnostics.FileVersionInfo vi = System.Diagnostics.FileVersionInfo.GetVersionInfo(path);
-                string company = vi.CompanyName == null ? "" : vi.CompanyName;
-                return company.IndexOf("Microsoft", StringComparison.OrdinalIgnoreCase) >= 0;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         /// <summary>文件地图自检：目录树体积、四级风险映射、squarified 布局覆盖。</summary>

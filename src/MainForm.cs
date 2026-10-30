@@ -119,7 +119,7 @@ namespace CleanC
         public static string MapDialog = "";
 
         private Segmented _viewSeg;
-        private DefensePanel _defense;
+        private MigratePanel _migrate;
         private FileMapView _map;
         private int _view;
         private bool _mapShown;
@@ -167,9 +167,6 @@ namespace CleanC
             _viewSlideKey = Ui.Key("viewSlide");
             _isAdmin = Native.IsAdmin();
             _tab = StartTab < 0 || StartTab > 3 ? 0 : StartTab;
-            DefenseCenter.Init();
-            DefenseCenter.Changed += OnDefenseChanged;
-            DefenseCenter.Alert += OnDefenseAlert;
             _level = (ScanLevel)Math.Max(0, Math.Min(3, StartLevel));
             _view = StartView == 1 ? 1 : 0; // 默认始终进入普通模式，CLI --mode file 可直达文件模式
             Text = Loc.T("app.name");
@@ -320,11 +317,20 @@ namespace CleanC
             _verifyBtn.Click += delegate { RunVerification(); };
             Controls.Add(_verifyBtn);
 
-            _defense = new DefensePanel();
-            _defense.Bounds = PxRect(RightX, 112, RightW, 484);
-            _defense.BackColor = Theme.Bg;
-            _defense.Visible = false;
-            Controls.Add(_defense);
+            _migrate = new MigratePanel();
+            _migrate.Bounds = PxRect(RightX, 112, RightW, 484);
+            _migrate.BackColor = Theme.Bg;
+            _migrate.Visible = false;
+            _migrate.Changed = delegate
+            {
+                if (_tab == 3)
+                {
+                    _rightSub = _migrate.StatusLine();
+                    ApplyTabChrome();
+                    Invalidate();
+                }
+            };
+            Controls.Add(_migrate);
 
             _map = new FileMapView();
             _map.Bounds = PxRect(22, 108, 1136, 458);
@@ -348,7 +354,7 @@ namespace CleanC
         /// <summary>四个页签的文案。初始化与切换语言共用，避免只重建一部分导致页签丢失。</summary>
         private static string[] TabLabels()
         {
-            return new string[] { Loc.T("tab.clean"), Loc.T("tab.uninstall"), Loc.T("tab.registry"), Loc.T("tab.defense") };
+            return new string[] { Loc.T("tab.clean"), Loc.T("tab.uninstall"), Loc.T("tab.registry"), Loc.T("tab.migrate") };
         }
 
         /// <summary>切换页签时同步分段控件与主按钮状态（不触发加载）。</summary>
@@ -373,8 +379,8 @@ namespace CleanC
             }
             else
             {
-                _scanBtn.Text = DefenseCenter.Checking ? Loc.T("def.btn.checking") : Loc.T("def.btn.check");
-                _scanBtn.Glyph = "\uE72E";
+                _scanBtn.Text = _migrate.HasScanned ? Loc.T("migrate.rescan") : Loc.T("migrate.scan");
+                _scanBtn.Glyph = "\uE8B7";
             }
         }
 
@@ -393,7 +399,7 @@ namespace CleanC
             _list.Visible = !file && _tab == 0 && _display.Count > 0 && !_loadingPrograms;
             _plist.Visible = !file && _tab == 1 && _programs.Count > 0 && !_loadingPrograms;
             _rlist.Visible = !file && _tab == 2 && _regItems.Count > 0;
-            _defense.Visible = !file && _tab == 3;
+            _migrate.Visible = !file && _tab == 3;
             if (file)
             {
                 _cleanBtn.Visible = false;
@@ -996,7 +1002,9 @@ namespace CleanC
             _viewSeg.Accent = Theme.Blue;
             _viewSeg.ItemColors = new Color[] { Theme.Blue, Theme.Cyan };
             if (_map != null) _map.ApplyTheme();
-            if (_defense != null) _defense.ApplyTheme();
+            if (_migrate != null) _migrate.ApplyTheme();
+            _engine.ApplyThemeAccents();
+            if (_display.Count > 0) _list.RefreshView();
             UpdateThemeTip();
             Invalidate();
         }
@@ -1010,14 +1018,17 @@ namespace CleanC
         private void UpdateThemeTip()
         {
             if (_tip == null) return;
-            _tip.SetToolTip(this, _hoverTheme ? Loc.T(Theme.IsDark ? "theme.toLight" : "theme.toDark") : "");
+            string key = Theme.Mode == ThemeMode.Dark ? "theme.toGold" :
+                (Theme.Mode == ThemeMode.Gold ? "theme.toLight" : "theme.toDark");
+            _tip.SetToolTip(this, _hoverTheme ? Loc.T(key) : "");
         }
 
         private void PaintThemeButton(Graphics g)
         {
             RectangleF r = new RectangleF(_themeRect.X, _themeRect.Y, _themeRect.Width, _themeRect.Height);
             float hv = _themeHover;
-            Color accent = Theme.IsDark ? Theme.Gold : Theme.Blue;
+            Color accent = Theme.Mode == ThemeMode.Dark ? Theme.Gold :
+                (Theme.Mode == ThemeMode.Gold ? Theme.Blue : Theme.Blue);
             Theme.FillRounded(g, Theme.Mix(Theme.Card, Theme.Mix(Theme.BlueSoft, accent, 0.1f), 0.5f + 0.5f * hv),
                 r, 10f);
             Theme.StrokeRounded(g, Theme.Mix(Theme.Border, accent, 0.28f + hv * 0.62f), r, 10f, 1f);
@@ -1035,8 +1046,10 @@ namespace CleanC
                 Font f = Theme.IconFont(13.5f);
                 sf.Alignment = StringAlignment.Center;
                 sf.LineAlignment = StringAlignment.Center;
-                // 太阳 = 切回浅色，月亮 = 切到深色
-                g.DrawString(Theme.IsDark ? "\uE706" : "\uE708", f, b, new RectangleF(-12, -12, 24, 24), sf);
+                // 月亮 = 切到深色，星形 = 切到金色，太阳 = 切回浅色
+                string glyph = Theme.Mode == ThemeMode.Dark ? "\uE734" :
+                    (Theme.Mode == ThemeMode.Gold ? "\uE708" : "\uE706");
+                g.DrawString(glyph, f, b, new RectangleF(-12, -12, 24, 24), sf);
             }
             g.Restore(st);
         }
@@ -1088,7 +1101,7 @@ namespace CleanC
             {
                 if (_tab == 1) StartLoadPrograms();
                 else if (_tab == 2) StartRegScan();
-                else if (_tab == 3) DefenseCenter.CheckNow();
+                else if (_tab == 3) _migrate.Rescan();
                 else StartScan();
             }
             else if (_tab == 1)
@@ -1103,7 +1116,6 @@ namespace CleanC
             {
                 SwitchTab(3);
             }
-            DefenseCenter.StartMonitorIfEnabled();
             if (AutoThemeSwitch > 0)
             {
                 Timer t = new Timer();
@@ -1199,8 +1211,8 @@ namespace CleanC
             _list.Visible = tab == 0 && _display.Count > 0 && !_loadingPrograms;
             _plist.Visible = tab == 1 && _programs.Count > 0 && !_loadingPrograms;
             _rlist.Visible = tab == 2 && _regItems.Count > 0;
-            _defense.Visible = tab == 3;
-            if (tab == 3) _defense.Sync();
+            _migrate.Visible = tab == 3;
+            if (tab == 3) _migrate.Sync();
             _cleanBtn.Visible = false;
             _cancelBtn.Visible = false;
             _verifyBtn.Visible = false;
@@ -1222,11 +1234,12 @@ namespace CleanC
             }
             else
             {
-                _rightSub = DefenseCenter.StatusLine();
+                _rightSub = _migrate.StatusLine();
             }
             ApplyTabChrome();
             if (tab == 1 && _programs.Count == 0) StartLoadPrograms();
             if (tab == 2 && _regItems.Count == 0 && !_regLoading) StartRegScan();
+            if (tab == 3 && !_migrate.HasScanned) _migrate.Rescan();
             ApplyViewChrome();
             Invalidate();
         }
@@ -1292,7 +1305,7 @@ namespace CleanC
             if (_tab == 0) StartScan();
             else if (_tab == 1) StartLoadPrograms();
             else if (_tab == 2) StartRegScan();
-            else DefenseCenter.CheckNow();
+            else _migrate.Rescan();
         }
 
         private void StartScan()
@@ -2851,20 +2864,18 @@ namespace CleanC
                 Font hf = Theme.Font(11f, FontStyle.Bold);
                 string head = _tab == 0 ? Loc.T("left.disk")
                     : (_tab == 1 ? Loc.T("left.appsTitle")
-                    : (_tab == 2 ? Loc.T("regtab.title") : Loc.T("def.leftTitle")));
+                    : (_tab == 2 ? Loc.T("regtab.title") : Loc.T("migrate.leftTitle")));
                 Theme.DrawText(g, head, hf, Theme.Text, new RectangleF(LeftX + 22, LeftY + 18, 220, 24),
                     StringAlignment.Near, StringAlignment.Center);
             }
             if (_tab == 3)
             {
-                RectangleF pill = new RectangleF(panel.Right - 78, LeftY + 18, 54, 22);
-                Color pc = DefenseCenter.Enabled ? Theme.Green : Theme.Muted;
+                RectangleF pill = new RectangleF(panel.Right - 70, LeftY + 18, 46, 22);
+                Color pc = _migrate.TargetRoot.Length > 0 ? Theme.Green : Theme.Amber;
                 Theme.FillRounded(g, Ui.Alpha(pc, 18), pill, 11f);
                 {
                     Font pf = Theme.Font(8.2f, FontStyle.Bold);
-                    string txt = DefenseCenter.Enabled
-                        ? (DefenseCenter.Level == DefenseLevel.High ? Loc.T("def.level.high") : Loc.T("def.level.low"))
-                        : Loc.T("def.status.offShort");
+                    string txt = _migrate.TargetDrive;
                     Theme.DrawText(g, txt, pf, pc, pill, StringAlignment.Center, StringAlignment.Center);
                 }
             }
@@ -2952,14 +2963,12 @@ namespace CleanC
             }
             else
             {
-                string lv = DefenseCenter.Enabled
-                    ? (DefenseCenter.Level == DefenseLevel.High ? Loc.T("def.level.high") : Loc.T("def.level.low"))
-                    : "—";
-                DrawStat(g, LeftX + 24, 330, Theme.Teal, Loc.T("def.stat.level"), lv);
-                DrawStat(g, LeftX + 24, 356, Theme.Blue, Loc.T("def.stat.checks"),
-                    DefenseCenter.CheckCount.ToString());
-                DrawStat(g, LeftX + 24, 382, Theme.Rose, Loc.T("def.stat.blocked"),
-                    DefenseCenter.Blocked.ToString());
+                DrawStat(g, LeftX + 24, 330, Theme.Blue, Loc.T("migrate.stat.count"),
+                    _migrate.MovableCount.ToString());
+                DrawStat(g, LeftX + 24, 356, Theme.Green, Loc.T("migrate.stat.moved"),
+                    _migrate.MovedCount.ToString());
+                DrawStat(g, LeftX + 24, 382, Theme.Teal, Loc.T("migrate.stat.freed"),
+                    Theme.Bytes(_migrate.MovedBytes));
             }
 
             if (_isAdmin)
@@ -3109,7 +3118,7 @@ namespace CleanC
         {
             string title = _tab == 0 ? Loc.T("right.title")
                 : (_tab == 1 ? Loc.T("uninstall.title")
-                : (_tab == 2 ? Loc.T("regtab.title") : Loc.T("def.title")));
+                : (_tab == 2 ? Loc.T("regtab.title") : Loc.T("migrate.title")));
             {
                 Font tf = Theme.Font(15f, FontStyle.Bold);
                 Theme.DrawText(g, title, tf, Theme.Text, new RectangleF(RightX, TitleY, 240, 30),
@@ -3809,7 +3818,7 @@ namespace CleanC
             Loc.SetLang(code);
             Text = Loc.T("app.name");
             _engine.Relocalize();
-            // 页签先重建：文案变了但数量必须仍是 4 个，否则「防护设置」会被钳掉
+            // 页签先重建：文案变了但数量必须仍是 4 个，否则最后一个页签会被钳掉
             _tabSeg.SetItems(TabLabels(), _tab);
             _levelSeg.SetItems(new string[]
             {
@@ -3828,10 +3837,10 @@ namespace CleanC
                 _map.RefreshView();
                 _mapSub = BuildMapSub();
             }
-            if (_defense != null)
+            if (_migrate != null)
             {
-                _defense.Relocalize();
-                _defense.Sync();
+                _migrate.Relocalize();
+                _migrate.Sync();
             }
             _scanSummary = _lastScan != null ? BuildScanSummary(_lastScan) : "";
             if (_tab == 0 && _lastScan != null) _rightSub = _scanSummary;
@@ -3843,7 +3852,7 @@ namespace CleanC
         {
             if (_tab == 3)
             {
-                _rightSub = DefenseCenter.StatusLine();
+                _rightSub = _migrate.StatusLine();
                 return;
             }
             if (_tab == 2)
@@ -3905,7 +3914,7 @@ namespace CleanC
             }
             else if (_tab == 3)
             {
-                _scanBtn.Text = DefenseCenter.Checking ? Loc.T("def.btn.checking") : Loc.T("def.btn.check");
+                _scanBtn.Text = _migrate.HasScanned ? Loc.T("migrate.rescan") : Loc.T("migrate.scan");
             }
             else
             {
@@ -3970,85 +3979,8 @@ namespace CleanC
             _cancelFlag = true;
             Anim.Stop(_spinKey);
             if (_langMenu != null && !_langMenu.IsDisposed) _langMenu.Close();
-            DefenseCenter.Changed -= OnDefenseChanged;
-            DefenseCenter.Alert -= OnDefenseAlert;
-            DefenseCenter.StopMonitor();
-            ToastForm.CloseAny();
+            if (_migrate != null) _migrate.CancelWork();
             base.OnFormClosing(e);
-        }
-
-        // ---------------------------------------------------------------- defense
-
-        private void OnDefenseChanged()
-        {
-            if (!IsHandleCreated || IsDisposed) return;
-            try
-            {
-                BeginInvoke(new Action(delegate
-                {
-                    if (IsDisposed) return;
-                    if (_tab == 3)
-                    {
-                        _defense.Sync();
-                        _rightSub = DefenseCenter.StatusLine();
-                        ApplyTabChrome();
-                    }
-                    Invalidate();
-                }));
-            }
-            catch
-            {
-            }
-        }
-
-        private void OnDefenseAlert(DefenseAlert a)
-        {
-            if (!IsHandleCreated || IsDisposed) return;
-            try
-            {
-                BeginInvoke(new Action(delegate { ShowDefenseAlert(a); }));
-            }
-            catch
-            {
-            }
-        }
-
-        private void ShowDefenseAlert(DefenseAlert a)
-        {
-            if (a == null) return;
-            string title = Loc.T("def.toast.title");
-            string body;
-            if (a.NewThreats.Count > 0 && a.Killed.Count > 0)
-                body = Loc.F("def.toast.body", a.NewThreats.Count, a.Killed.Count);
-            else if (a.Killed.Count > 0)
-                body = Loc.F("def.toast.killedOnly", a.Killed.Count);
-            else
-                body = Loc.F("def.toast.bodyOnly", a.NewThreats.Count);
-            try
-            {
-                ToastForm.ShowAlert(this, title, body, delegate { OpenDefenseThreat(); });
-            }
-            catch (Exception ex)
-            {
-                DefenseLog.Write("TOAST", "show failed: " + ex.Message);
-            }
-            Invalidate();
-        }
-
-        private void OpenDefenseThreat()
-        {
-            if (IsDisposed) return;
-            if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
-            Activate();
-            if (_view == 1) SwitchView(0);
-            if (_tab != 3) SwitchTab(3);
-            _defense.Sync();
-            List<Threat> list = DefenseCenter.SnapshotThreats();
-            if (list.Count == 0) return;
-            ThreatDialog d = new ThreatDialog(list[0]);
-            d.ShowDialog(this);
-            _defense.Sync();
-            Invalidate();
         }
     }
 }

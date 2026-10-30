@@ -20,6 +20,10 @@ jobs:
         shell: powershell
         run: .\dist\CleanC.exe --filetest --out filetest.json
 
+      - name: Self test (AppData relocation)
+        shell: powershell
+        run: .\dist\CleanC.exe --migratetest --out migratetest.json
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

@@ -70,8 +70,42 @@ namespace CleanC
             }
         }
 
+        /// <summary>主题切换后重算分类强调色（金色外观下蓝色系换成暖金色系）。</summary>
+        public void ApplyThemeAccents()
+        {
+            for (int i = 0; i < Categories.Count; i++)
+            {
+                Category c = Categories[i];
+                c.Accent = AccentFor(c.Id);
+            }
+        }
+
         private static Color AccentFor(string id)
         {
+            if (Theme.IsGold)
+            {
+                if (id == "user_temp") return Color.FromArgb(198, 148, 32);
+                if (id == "system_temp") return Color.FromArgb(176, 126, 52);
+                if (id == "wu_cache") return Color.FromArgb(156, 120, 48);
+                if (id == "browser_cache") return Color.FromArgb(218, 170, 76);
+                if (id == "app_cache") return Color.FromArgb(214, 164, 66);
+                if (id == "thumb_cache") return Color.FromArgb(150, 150, 62);
+                if (id == "crash_dump") return Color.FromArgb(214, 126, 80);
+                if (id == "font_cache") return Color.FromArgb(191, 119, 0);
+                if (id == "delivery_opt") return Color.FromArgb(218, 170, 76);
+                if (id == "recycle_bin") return Color.FromArgb(111, 139, 57);
+                if (id == "windows_old") return Color.FromArgb(174, 118, 28);
+                if (id == "prefetch") return Color.FromArgb(198, 112, 42);
+                if (id == "sys_logs") return Color.FromArgb(139, 124, 96);
+                if (id == "package_cache") return Color.FromArgb(176, 126, 52);
+                if (id == "reg_junk") return Color.FromArgb(190, 82, 60);
+                if (id == "system_core") return Color.FromArgb(120, 90, 40);
+                if (id == "programs") return Color.FromArgb(100, 86, 60);
+                if (id == "installer") return Color.FromArgb(139, 124, 96);
+                if (id == "user_files") return Color.FromArgb(176, 126, 52);
+                if (id == "pagefile") return Color.FromArgb(120, 108, 60);
+                return Color.FromArgb(169, 145, 100);
+            }
             if (id == "user_temp") return Color.FromArgb(47, 123, 255);
             if (id == "system_temp") return Color.FromArgb(99, 102, 241);
             if (id == "wu_cache") return Color.FromArgb(139, 92, 246);

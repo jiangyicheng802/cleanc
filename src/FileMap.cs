@@ -24,6 +24,8 @@ namespace CleanC
         public long FileCount;
         public FileRisk Risk = FileRisk.Risky;
         public string CatId = "other";
+        /// <summary>文件的具体类型（缓存 / 临时 / 日志 / 文档……），悬停卡用。</summary>
+        public string KindKey = "";
         /// <summary>归一化路径（小写、反斜杠），扫描时复用，避免逐文件重复转换。</summary>
         public string Norm = "";
         /// <summary>该目录的分类对象（文件分类直接复用，省掉逐文件查表）。</summary>
@@ -32,6 +34,8 @@ namespace CleanC
         public List<MapNode> Children;
         /// <summary>子树里四类风险各自的体积，下标 = FileRisk。</summary>
         public long[] Agg = new long[4];
+        /// <summary>子树里四类风险各自的文件数。</summary>
+        public long[] AggCount = new long[4];
         /// <summary>扫描节点数触顶，部分目录未展开。</summary>
         public bool Capped;
         /// <summary>根节点记录的受限目录数。</summary>
@@ -263,9 +267,11 @@ namespace CleanC
                     leaf.Cat = fc;
                     leaf.CatId = fc == null ? "other" : fc.Id;
                     leaf.Risk = MapRisk.OfFile(fc, dir);
+                    leaf.KindKey = FileJudge.Judge(full, fc).KindKey;
                     leaf.Size = size;
                     leaf.FileCount = 1;
                     leaf.Agg[(int)leaf.Risk] = size;
+                    leaf.AggCount[(int)leaf.Risk] = 1;
                     leaf.Parent = dir;
                     dir.Children.Add(leaf);
                     order.Add(leaf);
@@ -299,6 +305,10 @@ namespace CleanC
                 p.Agg[1] += n.Agg[1];
                 p.Agg[2] += n.Agg[2];
                 p.Agg[3] += n.Agg[3];
+                p.AggCount[0] += n.AggCount[0];
+                p.AggCount[1] += n.AggCount[1];
+                p.AggCount[2] += n.AggCount[2];
+                p.AggCount[3] += n.AggCount[3];
             }
             root.Capped = capped;
             root.Denied = denied;
@@ -352,7 +362,9 @@ namespace CleanC
             long oldSize = node.Size;
             long oldCount = node.FileCount;
             long[] oldAgg = new long[4];
+            long[] oldAggCount = new long[4];
             Array.Copy(node.Agg, oldAgg, 4);
+            Array.Copy(node.AggCount, oldAggCount, 4);
 
             node.Children.Clear();
             for (int i = 0; i < fresh.Children.Count; i++)
@@ -364,6 +376,7 @@ namespace CleanC
             node.Size = fresh.Size;
             node.FileCount = fresh.FileCount;
             node.Agg = fresh.Agg;
+            node.AggCount = fresh.AggCount;
 
             long dSize = node.Size - oldSize;
             long dCount = node.FileCount - oldCount;
@@ -372,7 +385,11 @@ namespace CleanC
             {
                 p.Size += dSize;
                 p.FileCount += dCount;
-                for (int k = 0; k < 4; k++) p.Agg[k] += node.Agg[k] - oldAgg[k];
+                for (int k = 0; k < 4; k++)
+                {
+                    p.Agg[k] += node.Agg[k] - oldAgg[k];
+                    p.AggCount[k] += node.AggCount[k] - oldAggCount[k];
+                }
                 p = p.Parent;
             }
             return true;
@@ -391,7 +408,11 @@ namespace CleanC
             {
                 p.Size -= node.Size;
                 p.FileCount -= node.FileCount;
-                for (int k = 0; k < 4; k++) p.Agg[k] -= node.Agg[k];
+                for (int k = 0; k < 4; k++)
+                {
+                    p.Agg[k] -= node.Agg[k];
+                    p.AggCount[k] -= node.AggCount[k];
+                }
                 p = p.Parent;
             }
             node.Parent = null;

@@ -79,6 +79,24 @@ namespace CleanC
             return Judge(fullPath, cat).Risk;
         }
 
+        /// <summary>把 file.kind.xxx 映射到本地化键，供文件模式悬停卡展示。</summary>
+        public static string NameKey(string kind)
+        {
+            return "filekind.name." + Suffix(kind);
+        }
+
+        public static string DescKey(string kind)
+        {
+            return "filekind.desc." + Suffix(kind);
+        }
+
+        private static string Suffix(string kind)
+        {
+            if (string.IsNullOrEmpty(kind)) return "other";
+            if (kind.StartsWith("file.kind.", StringComparison.Ordinal)) return kind.Substring(10);
+            return kind;
+        }
+
         private static string KindOf(string norm, string nameLower, string ext)
         {
             if (norm.IndexOf(@"\$recycle.bin\", StringComparison.Ordinal) >= 0) return "file.kind.recycle";

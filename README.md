@@ -1,13 +1,13 @@
-# C 盘清理 · CleanC v2.5
+﻿# C 盘清理 · CleanC v2.6
 
-一个真实可用的 Windows 清理、卸载与防护工具：扫描 C 盘、按规则引擎判断哪些能删，清理注册表与软件残留，按「普通 / 强力」两种方式卸载已安装软件，并提供带实时监控、篡改拦截、危害文件处置的主动防御模块。白色 + 清爽蓝界面（可一键切换深色），单文件 exe，不需要安装运行时。
+一个真实可用的 Windows 清理、卸载与搬家工具：扫描 C 盘、按规则引擎判断哪些能删，清理注册表与软件残留，按「普通 / 强力」两种方式卸载已安装软件，并把 `AppData` 大目录通过目录联接搬到其他磁盘。白色 + 清爽蓝界面，另有深色与金色外观；单文件 exe，不需要安装运行时。
 
-底层有两种视图：**普通模式**（四页签：清理 / 卸载 / 残留 / 防护）与 **文件模式**（SpaceSniffer 风格的文件地图，按体积铺满、四级风险配色、右键直接操作文件）。
+底层有两种视图：**普通模式**（四页签：清理 / 卸载 / 残留 / 应用搬家）与 **文件模式**（SpaceSniffer 风格的文件地图，按体积铺满、四级风险配色、右键直接操作文件）。
 
 ![主界面](docs/main.png)
 
-- 单文件 exe（约 485 KB），Windows 10/11 自带 .NET Framework 4.8 即可运行
-- 明暗双主题：标题栏右上角一键切换，首次运行跟随系统，选择记入 `settings.ini`
+- 单文件 exe（约 468 KB），Windows 10/11 自带 .NET Framework 4.8 即可运行
+- 三套外观：浅色 / 深色 / 金色，标题栏右上角一键循环，首次运行跟随系统，选择记入 `settings.ini`
 - 首次运行语言跟随系统：简体中文 / 繁體中文 / English，可随时在标题栏切换
 - 本地规则引擎，不上传任何文件
 - System32 / WinSxS / Program Files / 用户文档一律禁止删除
@@ -92,39 +92,22 @@
 - 拒绝：`SOFTWARE\Microsoft`、`Windows`、`Policies`、`Clients`、`RegisteredApplications`、`WOW6432Node` 等厂商/系统键；`Tcpip`、`Disk`、`Ntfs`、`Win*`、`Ms*` 等关键服务；`Security` 事件日志；`ROOT` / `HTREE` 设备；`Program Files\Common Files`、`Microsoft` 等厂商共享目录里的 COM/关联目标
 - 每条注册表删除都先 `reg export` 到备份目录，命令与批处理文件留在 `%LOCALAPPDATA%\CleanC\regcmd\`
 
-### 四、主动防御（防护设置页）
+### 四、应用搬家（AppData 目录联接）
 
-第四个页签「防护设置」提供一个可开关的主动防御模块。首次开启时对系统做一次完整性快照（基线），之后按档位周期复查。所有检查都在本地完成，不联网、不上传。
+第四个页签「应用搬家」解决「C 盘满了，但软件数据不能删」这一类问题：把 `AppData` 里的大目录整体搬到其他磁盘，再在原位置建立一个**目录联接（Junction）**。对应用来说路径没有变化，读写照常落到新磁盘，C 盘空间立刻释放。
 
-| 档位 | 频率 | 检查内容 |
-|---|---|---|
-| **低** | 每 60 秒 | 12 个 System32 关键文件指纹 + 10 个关键注册表值 + IFEO 调试器劫持 |
-| **高** | 每 15 秒 | 低档全部内容 + 启动项 / 启动目录 / Temp / Downloads 的危害文件清扫（危害文件扫描最快每 60 秒一轮） |
+- 扫描 `%LOCALAPPDATA%` 与 `%APPDATA%` 的一级子目录，按体积排序，显示文件数、当前位置与状态（可搬家 / 已搬家 / 外部联接 / 使用中）。
+- 只允许选择**非 C 盘的本地固定磁盘**；默认目标为 `D:\CleanC-Moved`，可点「更改」换成其他磁盘或自定义文件夹。
+- 搬家流程严格按「复制 → 校验 → 改名 → 建联接 → 删原目录」执行，任一步失败都会回滚，目标盘上的半成品会被清理。
+- 还原流程反向执行：删除联接 → 把数据从目标盘复制回 C 盘 → 校验数量与字节 → 删除目标副本。
+- 只处理 `Local` / `Roaming` 的**一级子目录**，跳过 `Microsoft`、`Packages`、`Programs`、`Temp`、`CleanC` 等系统 / 程序目录；个人文档与系统路径不会参与搬家。
+- 「使用中」只是根据进程名与目录名做的提示，不阻止操作；真正被占用的文件会在复制阶段失败并回滚。
+- 搬家记录写入 `%LOCALAPPDATA%\CleanC\migrate.ini`，日志追加到 `%LOCALAPPDATA%\CleanC\logs\migrate.log`。只有带记录的联接才允许在本程序里一键还原，手动创建的外部联接会标记为「外部联接」且不可选。
+- 搬家不会修改注册表、不会卸载程序、不会删除个人文件；卸载 CleanC 也不会破坏已经建立的目录联接。
 
-**系统完整性**
-
-- 对 `kernel32 / ntdll / user32 / advapi32 / gdi32 / shell32 / winlogon / services / lsass / svchost / cmd / taskmgr` 记录 SHA-256 与修改时间；文件未被改动时只比较大小与时间戳，几乎不耗 CPU。
-- 大小 / 时间变化时才重新哈希。若新文件的版本信息仍由 Microsoft 签发，视为 Windows 更新并静默刷新基线，避免把每月补丁误报为篡改；否则列为「系统文件被篡改」。
-- 注册表基线覆盖 Winlogon `Shell / Userinit`、`AppInit_DLLs / LoadAppInit_DLLs`（含 WOW6432Node）、SafeBoot `AlternateShell`、Windows Defender 的 `DisableAntiSpyware / DisableRealtimeMonitoring`；值一旦偏离基线就报告，并支持一键恢复基线值（无管理员权限时会提示需要提权）。
-- 枚举 `Image File Execution Options` 下所有 `Debugger`：新增或指向临时目录 / 用户目录的项按「镜像劫持」高风险报告。
-
-**发现篡改之后**
-
-1. 立即扫描当前进程，只针对从 `Temp / Downloads / Public / ProgramData` 等可疑位置启动、且未签名或最近启动、或伪装系统进程名的进程执行终止；Windows 目录与 `Program Files` 下的进程永不触碰。高档门槛更低（命中一个附加特征即终止），低档需要同时命中更多可疑特征。
-2. 右下角弹出置顶提示（带红色警示条与「查看方案」按钮），提示会写明发现的风险数量与已终止的进程数；主窗口最小化时也会弹出。
-3. 点击「查看方案」进入风险详情：说明、目标路径、处置建议与可执行按钮（隔离文件 / 禁用启动项 / 立即修复注册表 / 忽略）。
-
-**危害文件检查**
-
-- 启动项（HKLM / HKCU / WOW6432Node 的 `Run / RunOnce`）与启动目录：指向临时目录、双扩展名伪装（如 `invoice.pdf.exe`）、隐藏文件、伪装系统进程名（如 `Temp\svchost.exe`）的项会列出。
-- `%TEMP%`、`Windows\Temp`、`Downloads` 顶层可执行文件：隐藏属性、双扩展名、伪装系统名、`.scr` 格式会被标记为高危。
-- 处置方式：文件移入 `%LOCALAPPDATA%\CleanC\quarantine\`（保留原文件名与时间戳，不会直接删除）；启动项先写日志再删除对应值；高风险文件若正在运行，会先终止进程。
-
-防护开关、档位写入 `settings.ini`（`defense.enabled` / `defense.level`），基线与忽略列表分别保存在 `%LOCALAPPDATA%\CleanC\defense_baseline.dat`、`defense_ignore.txt`，事件日志追加到 `%LOCALAPPDATA%\CleanC\logs\defense.log`（超过 2 MB 自动轮转）。
-
-| 防护页（深色） | 右下角拦截提示 | 风险详情与解决方案 |
-|---|---|---|
-| ![防护页](docs/defense.png) | ![拦截提示](docs/defense-toast.png) | ![风险详情](docs/defense-dialog.png) |
+| 应用搬家（金色外观） |
+|---|
+| ![应用搬家](docs/migrate.png) |
 
 ### 五、极限档的清理顺序（AppData 原则）
 
@@ -162,7 +145,8 @@
 5. Logo 放大展示（1.0 → 1.32 倍），轨道环与两颗卫星点绕行
 6. 标题逐字上浮、副标题与进度条淡入
 7. 三行状态文案打勾，进度条流光扫过
-8. 整体轻微放大并淡出到主界面
+8. 底部浮出 `make for lemonvia76` 落款
+9. 整体轻微放大并淡出到主界面
 
 **帧率与卡顿排查**
 
@@ -186,22 +170,24 @@ JSON 会输出主界面 `fps / paintMs / ticks` 与启动动画 `splashFps / spl
 
 ### 七、Logo
 
-圆角方块沿对角线一分为二：**左下角白色、右上角蓝色**（蓝色一侧自带蓝→青渐变）。
-C 字形在白色一半上用蓝色、在蓝色一半上用白色 —— 两半都保持对比度，拼起来是一个完整的斜切 C。
-白色一半贴着一张极淡的描边，保证在白色界面上也能看到轮廓。
+圆角方块沿对角线一分为二：**左下角浅底、右上角强调色**（浅色 / 深色为蓝→青渐变，金色外观为香槟金渐变）。
+C 字形在浅色一半上用强调色、在强调色一半上用白色 —— 两半都保持对比度，拼起来是一个完整的斜切 C。
+浅色一半贴着一张极淡的描边，保证在白色界面上也能看到轮廓。
 
-### 八、深色模式
+### 八、三套外观（浅色 / 深色 / 金色）
 
-标题栏语言切换左边多了一个圆形按钮：浅色时显示月亮，深色时显示太阳，点一下即时换肤，不需要重启。
+标题栏语言切换左边有一个圆形按钮，点一下按 **浅色 → 深色 → 金色 → 浅色** 循环换肤，不需要重启：
 
-| 浅色 | 深色 |
-|---|---|
-| ![浅色主界面](docs/main.png) | ![深色主界面](docs/dark.png) |
-
+- 浅色时显示月亮，深色时显示星形，金色时显示太阳。
+- 深色模式：暗色底 `#0D131D`、卡片 `#182131`、正文 `#E9EFF8`，蓝色提亮到 `#5496FF`，阴影改成纯黑并加重，深色下文字改用灰度抗锯齿。
+- 金色模式：奶油白底 `#FFFCF4`、香槟金强调色 `#C69420`、深棕正文，分类图标与选中态一起换成暖金色系，Logo 的斜切渐变也同步变为香槟金。
 - **首次运行跟随系统**：读 `HKCU\...\Themes\Personalize\AppsUseLightTheme`，系统是深色就直接进深色。
-- **之后记住你的选择**：点击会写入 `%LOCALAPPDATA%\CleanC\settings.ini` 的 `theme=` 键，与 `lang=` 共用一个文件、互不覆盖。
-- **整屏一起换**：主窗体、各类列表、分段控件、环形图、启动动画、防护页与全部弹窗都按调色板重绘；深色下文字改用灰度抗锯齿，避免 ClearType 在暗底上出现彩边。
-- **配色不是简单反相**：暗色底 `#0D131D`、卡片 `#182131`、正文 `#E9EFF8`，蓝色提亮到 `#5496FF` 保证暗底对比度；阴影改成纯黑并加重，淡色底纹（图标底色、chip）的透明度按系数提亮，否则在暗底上会消失。
+- **之后记住你的选择**：点击会写入 `%LOCALAPPDATA%\CleanC\settings.ini` 的 `theme=` 键（`light` / `dark` / `gold`），与 `lang=` 共用一个文件、互不覆盖。
+- **整屏一起换**：主窗体、各类列表、分段控件、环形图、启动动画、应用搬家页与全部弹窗都按调色板重绘。
+
+| 浅色 | 深色 | 金色 |
+|---|---|---|
+| ![浅色主界面](docs/main.png) | ![深色主界面](docs/dark.png) | ![金色主界面](docs/gold.png) |
 
 ### 九、文件模式（文件地图）
 
@@ -218,7 +204,7 @@ C 字形在白色一半上用蓝色、在蓝色一半上用白色 —— 两半�
 
 | 操作 | 行为 |
 |---|---|
-| 悬停 | 评价卡：名称、风险标签、完整路径、体积与占父级比例、文件数、子树四类体积、规则说明与操作提示 |
+| 悬停 | 详细评价卡：名称、风险标签、完整路径、体积与占父级比例、文件数、具体类型（缓存 / 临时 / 日志 / 转储 / 个人文档…）、分类、修改时间、三行类型说明、清理建议、子树四类文件数与体积、操作提示 |
 | 左键 | 打开该区块：目录用资源管理器打开，文件定位并选中；单击延迟 300 ms，以兼容双击 |
 | 双击 | 钻入该目录；面包屑可返回上级或跳到任意层；「刷新」重建整张地图 |
 | 右键 | 删除 / 剪切 / 粘贴 / 复制 / 属性 / 垃圾清理排查 |
@@ -334,13 +320,11 @@ dist\C盘清理.exe
 ```
 --tab 1                 启动后停在「卸载软件」页
 --tab 2                 启动后停在「残留清理」页
---tab 3                 启动后停在「防护设置」页
---defensenable          启动后直接开启主动防御（写入设置，可配合 --tab 3）
---defenselevel 0|1      指定防御档位：低 / 高（配合 --defensenable）
+--tab 3                 启动后停在「应用搬家」页
 --mode normal|file      启动后直接进入普通模式 / 文件模式（文件模式会立即扫描）
 --level 0|1|2|3         指定清理范围：低 / 中 / 高 / 极限
 --autoscan              启动后自动开始扫描（配合 --level）
---theme light|dark      强制指定主题（不写入设置，截图/调试用）
+--theme light|dark|gold 强制指定主题（不写入设置，截图/调试用）
 --autotheme 1200        启动 1200 ms 后自动切换一次主题（验证换肤链路）
 --uidemo                演示数据（截图用）
 --uidialog confirm      直接弹出指定弹窗（截图/调试用：confirm / result / consent / uninstall / force / verify）
@@ -376,13 +360,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1
 |---|---|
 | ![验证](docs/verify.png) | ![免责](docs/consent.png) |
 
-| 强力删除确认 | 防护设置 |
+| 强力删除确认 | 应用搬家（金色） |
 |---|---|
-| ![强力](docs/force.png) | ![防护](docs/defense.png) |
+| ![强力](docs/force.png) | ![应用搬家](docs/migrate.png) |
 
-| 深色主界面 | 深色卸载页 |
+| 深色主界面 | 金色主界面 |
 |---|---|
-| ![深色](docs/dark.png) | ![深色卸载](docs/dark-uninstall.png) |
+| ![深色](docs/dark.png) | ![金色](docs/gold.png) |
+
+| 深色卸载页 |
+|---|
+| ![深色卸载](docs/dark-uninstall.png) |
 
 ## 目录结构
 
@@ -391,7 +379,7 @@ app.manifest            清单（asInvoker、DPI、长路径、Common Controls�
 build.ps1               构建脚本（图标 + csc + 中文名副本）
 src/Program.cs          入口、DPI 缩放、崩溃日志、自检命令
 src/Loc.cs              简体中文 / 繁體中文 / English 文案与语言设置
-src/Theme.cs            明暗两套调色板、圆角/阴影/文字工具、C Logo、动画引擎
+src/Theme.cs            浅色 / 深色 / 金色三套调色板、圆角/阴影/文字工具、C Logo、动画引擎
 src/Settings.cs         settings.ini 读写（lang / theme），改一个键不覆盖其他键
 src/Models.cs           风险级别、扫描档位、分类、程序条目、注册表项模型
 src/RuleEngine.cs       规则构建、最长前缀匹配、删除硬拦截、注册表垃圾类别
@@ -408,16 +396,14 @@ src/FileMap.cs          文件地图数据层：目录树扫描、四级风险�
 src/FileMapView.cs      文件地图画布：区块绘制、面包屑、悬停评价卡、左键/双击/右键、入场动画
 src/FileOps.cs          文件操作：剪贴板复制/剪切/粘贴、永久删除、系统属性框、垃圾排查与批量清理
 src/FileDialogs.cs      右键盘点、通用确认/消息弹窗、垃圾清理排查报告
-src/Defense.cs          主动防御引擎：完整性基线与 SHA-256、关键注册表 / IFEO 校验、启动项与危害文件扫描、可疑进程终止、后台监控与日志
-src/DefenseUI.cs        防护页：开关 / 档位 / 统计、风险列表、风险详情与处置弹窗、右下角拦截提示
-src/MainForm.cs         无边框主窗体、普通/文件模式切换、四页签、四档选择、扫描/清理/卸载/残留/防护/验证流程
+src/Migrate.cs          AppData 搬家：目录联接读写、体积统计、复制/校验/回滚、还原、记录与日志
+src/MigrateUI.cs        应用搬家页：目录列表、目标盘选择、搬家/还原流程与进度
+src/MainForm.cs         无边框主窗体、普通/文件模式切换、四页签、四档选择、扫描/清理/卸载/残留/搬家/验证流程
 src/Controls.cs         分段控件、按钮、环形图、分类列表、程序列表、注册表列表、启动动画
 src/Dialogs.cs          确认/详情/结果/免责声明/卸载确认/程序信息/清理后验证弹窗
 tools/make-icon.py     对角双色 Logo 图标生成（纯标准库）
 tools/make-icon.ps1    make-icon.py 的 PowerShell 包装
 tools/shot.ps1          开发用窗口截图脚本（PrintWindow）
-tools/regattack/        独立注册表攻击模拟器：HKCU 启动项 + 隐藏载荷 + 自动恢复看门狗
-tools/regattack/build.ps1  RegAttackSim.exe 编译脚本
 ```
 
 ## 自检命令（开发用）
@@ -433,7 +419,7 @@ dist\C盘清理.exe --regscan --out regscan.json           # 导出全部残留�
 dist\C盘清理.exe --verifytest --out verify.json         # 第 16 步验证的六项检查结果
 dist\C盘清理.exe --tasktest --out tasktest.json         # 造计划任务 → 扫描 → 删除 → 回查（非管理员可跑）
 dist\C盘清理.exe --filetest --out filetest.json         # 文件地图：目录树体积、四级风险映射、Squarified 布局、垃圾排查与清理
-dist\C盘清理.exe --defensetest --out defensetest.json   # 防御引擎：SHA-256 变化、双扩展名 / 可疑路径 / 伪装系统名判定、启动项扫描、隔离链路
+dist\C盘清理.exe --migratetest --out migratetest.json   # 应用搬家：复制、目录联接、经联接读回、还原复制
 dist\C盘清理.exe --fpsprobe --out fps.json              # 实测主界面 / 启动动画帧率（帧数、绘制耗时）
 ```
 
@@ -441,7 +427,7 @@ dist\C盘清理.exe --fpsprobe --out fps.json              # 实测主界面 / �
 
 | 自检 | 结果 |
 |---|---|
-| `--selftest` | 扫描 305,821 个文件 / 约 51.8 GB，用时 13.6 s；**16 项分类断言 + 9 项逐文件类型 / 风险断言全部通过** |
+| `--selftest` | 扫描 323,255 个文件 / 约 55.3 GB，用时 12.5 s；**16 项分类断言 + 9 项逐文件类型 / 风险断言全部通过** |
 | `--safetytest` | System32 / 文档 / pagefile 全拦截；**Roaming、LocalLow、Local 根目录全部禁止**；`Local\Temp` 仍允许；9 个应用缓存根目录被发现并归类为 `app_cache` |
 | `--cleantest` | 3 个 `.tmp` + `setup.exe` 全部清理，`report.pdf` 被判定为个人文件并保留（`pdfKept: true`、`skipped: 1`），空子目录回收，日志写入 |
 | `--uninstalltest` | 7 个程序 / 2 个受保护（Windows 兼容性数据库、NVIDIA 驱动）；23 项守卫断言全部通过（含 Classes / Installer / EventLog / Enum / 深层路径值 / 驱动强制删除脚本与 DriverStore 映射） |
@@ -451,38 +437,7 @@ dist\C盘清理.exe --fpsprobe --out fps.json              # 实测主界面 / �
 | `--verifytest` | 六项验证全部可执行：计划任务 / 事件日志 / 隐藏设备正常；防火墙 4 项与 1 个失效服务仍列为残留（清理前快照） |
 | `--tasktest` | 建一个指向不存在 exe 的计划任务 → COM 扫描命中 → `schtasks /delete` 删除 → 回查任务已消失（`ok: true`） |
 | `--filetest` | 临时目录造树：体积 / 文件数正确；六级风险映射全部命中；Squarified 布局无重叠且覆盖容器；垃圾排查 4 项可清理，清理时个人文档被跳过（`deleted: 3`、`skipped: 1`） |
-| `--defensetest` | SHA-256 前后变化、双扩展名 / 可疑路径 / 伪装系统名判定、启动项扫描、隔离链路全部通过（`ok: true`、`quarantineOk: true`） |
-
-## 注册表攻击模拟（独立工具）
-
-`tools/regattack/RegAttackSim.exe` 是一个**独立**的安全测试工具，用来验证主动防御的启动项检测与可疑进程终止，不并入清理软件，也不放进 `dist`。
-
-它只做一件事：写入当前用户的
-`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\CleanC_AttackSim`
-启动项，指向 `%TEMP%\CleanC_RegAttackSim\payload.exe` 这个隐藏测试载荷；攻击载荷会被 CleanC 按可疑启动项 / 可疑进程判定并终止，随后工具自动删除启动项。
-
-- **不碰系统级注册表**：不修改 Winlogon、AppInit_DLLs、SafeBoot、Defender、服务或 HKLM。
-- **不持久化**：启动项只存在几十秒；工具退出时会删除；异常退出时后台看门狗（`restore.bat`）会在 N 秒后强制删除。
-- **不改 CleanC**：工具不读写 CleanC 的数据，只读取 `settings.ini` 来判断防御是否开启。
-- 需要 CleanC 已启动并开启主动防御（建议高档）。启动攻击后，在 CleanC 中点击「立即检查」可立刻触发；否则高档约 1 分钟内、低档最长约 4 分钟会由自动检查命中。
-
-```
-tools\regattack\RegAttackSim.exe                 # 交互模式，输入 ATTACK 开始
-tools\regattack\RegAttackSim.exe --yes --wait 80 # 无人值守测试（80 秒等待）
-tools\regattack\RegAttackSim.exe --cleanup       # 只清理上次可能残留的启动项
-```
-
-输出示例（实测通过）：
-
-```
-[3/5] 启动攻击载荷…
-[4/5] 等待 CleanC 检测并终止攻击进程（最多 80 秒）…
-CleanC 主动防御：KILL terminated running risky file: payload
-结果：检测到攻击进程已被终止（很可能是 CleanC 主动防御），启动项仍在，准备恢复。
-✔ 启动项已删除，现场已恢复。
-```
-
-源码与构建脚本：`tools/regattack/RegAttackSim.cs`、`tools/regattack/build.ps1`。
+| `--migratetest` | 复制 7,168 B → 校验字节一致 → 创建目录联接 → 经联接读回文件 → 删除联接 → 还原复制；`copyOk / junctionOk / linkReadOk / restoreOk` 全部通过 |
 
 ## 已知限制
 
@@ -498,20 +453,22 @@ CleanC 主动防御：KILL terminated running risky file: payload
 - 浏览器扩展数据默认不勾选，执行前应先完全退出浏览器，否则改名会失败。
 - 残留目录默认**只改名不删除**（`xxx.CleanC_bak`），需要你确认后手动清理；程序不会替你删掉一个可能还存着配置或存档的目录。
 - 第 16 步的 `sfc /scannow`、`DISM /CheckHealth` 需要管理员权限，会以新窗口运行，程序只提供入口，不在后台静默执行。
-- 主动防御只在 CleanC 运行期间生效，不做常驻服务 / 驱动；关闭主程序后监控即停止。
-- 系统文件完整性以「SHA-256 + 版本信息」判定：微软签发的系统更新会静默刷新基线，因此只报告非微软更新造成的改动；被完整保留版本信息的篡改可能漏报。
-- 终止进程受权限限制：普通权限只能终止当前用户的可疑进程；恢复 `HKLM` 注册表值、删除系统级启动项需要管理员（界面会提示改用左下角「立即提权」）。
-- 启动项与危害文件识别是启发式规则，自定义脚本可能被误报；默认只隔离、不直接删除，且隔离文件后不会自动清理对应启动项（需再点「禁用启动项」）。
-- `tools\regattack\RegAttackSim.exe` 的行为本身模拟恶意软件（写 HKCU Run、隐藏临时载荷），**Windows 安全中心 / Smart App Control 可能拦截或删除它**，这属于预期现象。仅在测试机上使用；如被拦截，可将 `tools\regattack` 目录临时加入排除项，测试完成后移除，切勿在生产机上关闭安全软件。
+- 应用搬家只接受**本地固定磁盘**作为目标，不能搬到 C 盘、网络盘或移动磁盘。
+- 搬家前必须完全退出对应应用；被占用的文件会导致复制失败，程序会自动清理目标盘半成品并保留原目录。
+- 只处理 `AppData\Local` / `AppData\Roaming` 的一级子目录，`Microsoft`、`Packages`、`Programs`、`Temp` 等系统 / 程序目录不会出现在列表里。
+- 目录联接对绝大多数应用透明；少数会主动检查真实路径或拒绝联接的软件可能在搬家后异常，此时点「还原所选」即可把数据完整搬回 C 盘。
+- 还原需要 C 盘有足够空间临时存放数据；程序先复制回 C 盘并校验，成功后才删除目标盘副本。
+- 搬家记录只保存在 `%LOCALAPPDATA%\CleanC\migrate.ini`；重装系统后目录联接仍然有效，但程序会把它们显示为「外部联接」，不再提供一键还原。
 
 ## English
 
 CleanC is a local-only Windows 10/11 cleanup utility for the `C:` drive.
 
 - **Single-file exe, no installer** — run `dist/CleanC.exe` (or `dist/C盘清理.exe`) directly. Requires .NET Framework 4.8, which ships with Windows 10/11.
-- **Normal mode** — four scan scopes, per-file risk verdicts, category lists, safe cleanup, app uninstaller, 16-step residual sweep and post-clean verification.
-- **Active defense** — optional low/high-frequency monitoring of 12 System32 binaries, critical registry values and IFEO hijacks; signed Microsoft updates refresh the baseline automatically. Tampering raises a bottom-right toast, terminates processes started from suspicious folders, and lists risky startup items / hidden executables with one-click quarantine or disable actions. Files can be quarantined; nothing is deleted outright.
-- **File map mode** — SpaceSniffer-style treemap sized by volume, four risk colors (green / yellow / red / black), hover summary, click to open, double-click to zoom, right-click delete / cut / paste / copy / properties / junk scan. Black zones (System32, WinSxS, Program Files, AppData red lines) can never be deleted or cut.
+- **Normal mode** — four scan scopes, per-file risk verdicts, category lists, safe cleanup, app uninstaller, 16-step residual sweep, AppData relocation and post-clean verification.
+- **AppData relocation** — scan large folders under `%LOCALAPPDATA%` / `%APPDATA%`, move them to another fixed drive with copy → verify → junction → cleanup, and restore them with one click. Apps keep using the original path through the directory junction.
+- **File map mode** — SpaceSniffer-style treemap sized by volume, four risk colors (green / yellow / red / black), detailed hover card with file kind, category, modified time, explanation and advice, click to open, double-click to zoom, right-click delete / cut / paste / copy / properties / junk scan. Black zones (System32, WinSxS, Program Files, AppData red lines) can never be deleted or cut.
+- **Three appearances** — light, dark and gold; one click cycles them and the choice is remembered.
 - **Safety** — every destructive action is re-validated against the rule engine; registry changes are exported before deletion; nothing is uploaded.
 - UI languages: Simplified Chinese, Traditional Chinese and English (first run follows the system language).
 - Build from source on Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1`.

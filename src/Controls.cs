@@ -1967,6 +1967,15 @@ namespace CleanC
                     new RectangleF(cx - 240, lh - 40, 480, 18), StringAlignment.Center, StringAlignment.Center);
                 Theme.DrawText(g, Loc.T("splash.skip"), ff, Ui.Alpha(Theme.Muted, (int)(120 * Seg(500f, 900f))),
                     new RectangleF(lw - 110, lh - 40, 92, 18), StringAlignment.Far, StringAlignment.Center);
+                float madeP = Seg(2520f, 2860f);
+                if (madeP > 0f)
+                {
+                    Font mf = Theme.Font(8f, FontStyle.Bold);
+                    float y = lh - 62 + (1f - Anim.EaseOut(madeP)) * 7f;
+                    Theme.DrawText(g, Loc.T("splash.made"), mf,
+                        Ui.Alpha(Theme.SubText, (int)(230 * madeP)),
+                        new RectangleF(cx - 220, y, 440, 18), StringAlignment.Center, StringAlignment.Center);
+                }
             }
 
             if (fade > 0f)

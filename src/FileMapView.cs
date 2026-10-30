@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
+using System.Text;
 using System.Windows.Forms;
 
 namespace CleanC
@@ -687,8 +689,8 @@ namespace CleanC
 
         private void PaintTip(Graphics g, MapNode node)
         {
-            float w = 322f;
-            float h = 172f;
+            float w = 360f;
+            float h = 226f;
             float x = _mouse.X + 18f;
             float y = _mouse.Y + 18f;
             if (x + w > LW - 6f) x = _mouse.X - w - 14f;
@@ -703,11 +705,10 @@ namespace CleanC
             Color baseC = MapRisk.Base(node.Risk);
             Theme.FillRounded(g, Theme.A(baseC, 18), new RectangleF(card.X + 1, card.Y + 10, 4, 22), 2f);
 
-            string name = node.Name;
             {
                 Font f = Theme.Font(10f, FontStyle.Bold);
-                Theme.DrawText(g, name, f, Theme.Text,
-                    new RectangleF(card.X + 14, card.Y + 10, w - 120, 22), StringAlignment.Near,
+                Theme.DrawText(g, node.Name, f, Theme.Text,
+                    new RectangleF(card.X + 14, card.Y + 10, w - 132, 22), StringAlignment.Near,
                     StringAlignment.Center);
             }
             string riskText = Loc.T(MapRisk.Key(node.Risk));
@@ -735,26 +736,35 @@ namespace CleanC
                     StringAlignment.Center);
             }
 
+            string kindKey = node.KindKey;
+            if (!node.IsDir && string.IsNullOrEmpty(kindKey))
+                kindKey = FileJudge.Judge(node.Path, node.Cat).KindKey;
+            string catName = node.CatId != null && node.CatId.Length > 0
+                ? Loc.CatName(node.CatId) : Loc.T("filekind.name.other");
+            string meta;
+            if (node.IsDir)
             {
-                float ax = card.X + 14;
-                float ay = card.Y + 73;
-                string[] labels =
+                string kinds = MainKinds(node);
+                meta = Loc.T("map.tip.dir") + " · " + Loc.T("map.tip.cat") + "：" + catName +
+                    (kinds.Length > 0 ? " · " + Loc.F("map.tip.kinds", kinds) : "");
+            }
+            else
+            {
+                meta = Loc.T("map.tip.kind") + "：" + Loc.T(FileJudge.NameKey(kindKey)) +
+                    " · " + Loc.T("map.tip.cat") + "：" + catName;
+            }
+            string modified = ModifiedText(node);
+            {
+                Font f = Theme.Font(8f, FontStyle.Bold);
+                Theme.DrawText(g, meta, f, Theme.SubText,
+                    new RectangleF(card.X + 14, card.Y + 69, w - 28, 17), StringAlignment.Near,
+                    StringAlignment.Center);
+                if (modified.Length > 0)
                 {
-                    Loc.T("map.legend.safe"), Loc.T("map.legend.caution"),
-                    Loc.T("map.legend.risky"), Loc.T("map.legend.forbidden")
-                };
-                Font f = Theme.Font(7.4f, FontStyle.Regular);
-                for (int i = 0; i < 4; i++)
-                {
-                    using (SolidBrush b = new SolidBrush(MapRisk.Base((FileRisk)i)))
-                    {
-                        g.FillEllipse(b, ax, ay + 6, 6, 6);
-                    }
-                    string v = Theme.Bytes(node.Agg[i]);
-                    Font vf = Theme.Font(7.4f, FontStyle.Bold);
-                    Theme.DrawText(g, labels[i] + " " + v, f, Theme.SubText,
-                        new RectangleF(ax + 10, ay, 72, 16), StringAlignment.Near, StringAlignment.Center);
-                    ax += 74f;
+                    Font mf = Theme.Font(7.4f, FontStyle.Regular);
+                    Theme.DrawText(g, Loc.T("map.tip.modified") + " " + modified, mf, Theme.Faint,
+                        new RectangleF(card.X + 14, card.Y + 86, w - 28, 15), StringAlignment.Far,
+                        StringAlignment.Center);
                 }
             }
 
@@ -763,27 +773,113 @@ namespace CleanC
             {
                 eval = Loc.T("map.eval.forbidden");
             }
-            else if (node.CatId != null && node.CatId.Length > 0)
+            else if (node.IsDir)
             {
-                eval = Loc.CatDesc(node.CatId);
+                string summary = Loc.F("map.tip.dirSummary", Theme.Count(node.FileCount),
+                    Theme.Bytes(node.Agg[0]), Theme.Bytes(node.Agg[1]),
+                    Theme.Bytes(node.Agg[2] + node.Agg[3]));
+                eval = summary + "  " + Loc.CatDesc(node.CatId == null || node.CatId.Length == 0 ? "other" : node.CatId);
             }
             else
             {
-                eval = Loc.T(MapRisk.EvalKey(node.Risk));
+                eval = Loc.T(FileJudge.DescKey(kindKey));
             }
-            if (node.Risk == FileRisk.Risky && node.CatId == "other")
-                eval = Loc.T("map.eval.risky");
             {
                 Font f = Theme.Font(8f, FontStyle.Regular);
                 DrawWrap(g, eval, f, Theme.SubText,
-                    new RectangleF(card.X + 14, card.Y + 93, w - 28, 38), 2);
+                    new RectangleF(card.X + 14, card.Y + 103, w - 28, 40), 3);
             }
 
             {
-                Font f = Theme.Font(7.6f, FontStyle.Regular);
-                Theme.DrawText(g, Loc.T("map.tip.hint"), f, Theme.Faint,
-                    new RectangleF(card.X + 14, card.Bottom - 22, w - 28, 14), StringAlignment.Near,
+                Color adviceC = node.Risk == FileRisk.Safe ? Theme.Green :
+                    (node.Risk == FileRisk.Caution ? Theme.Amber :
+                    (node.Risk == FileRisk.Risky ? Theme.Red : Theme.Muted));
+                string advice = Loc.T("map.advice.safe");
+                if (node.Risk == FileRisk.Caution) advice = Loc.T("map.advice.caution");
+                else if (node.Risk == FileRisk.Risky) advice = Loc.T("map.advice.risky");
+                else if (node.Risk == FileRisk.Forbidden) advice = Loc.T("map.advice.forbidden");
+                Font f = Theme.Font(8f, FontStyle.Bold);
+                using (SolidBrush b = new SolidBrush(adviceC))
+                {
+                    g.FillEllipse(b, card.X + 14, card.Y + 150, 6, 6);
+                }
+                Theme.DrawText(g, advice, f, adviceC,
+                    new RectangleF(card.X + 26, card.Y + 146, w - 40, 17), StringAlignment.Near,
                     StringAlignment.Center);
+            }
+
+            {
+                string[] labels =
+                {
+                    Loc.T("map.legend.safe"), Loc.T("map.legend.caution"),
+                    Loc.T("map.legend.risky"), Loc.T("map.legend.forbidden")
+                };
+                Font f = Theme.Font(7.4f, FontStyle.Regular);
+                for (int i = 0; i < 4; i++)
+                {
+                    float ax = card.X + 14 + (i % 2) * 166f;
+                    float ay = card.Y + 170 + (i / 2) * 16f;
+                    using (SolidBrush b = new SolidBrush(MapRisk.Base((FileRisk)i)))
+                    {
+                        g.FillEllipse(b, ax, ay + 5, 6, 6);
+                    }
+                    string v = Theme.Count(node.AggCount[i]) + " · " + Theme.Bytes(node.Agg[i]);
+                    Font vf = Theme.Font(7.4f, FontStyle.Bold);
+                    Theme.DrawText(g, labels[i] + "  " + v, f, Theme.SubText,
+                        new RectangleF(ax + 10, ay, 154, 16), StringAlignment.Near, StringAlignment.Center);
+                }
+            }
+
+            {
+                Font f = Theme.Font(7.4f, FontStyle.Regular);
+                Theme.DrawText(g, Loc.T("map.tip.hint"), f, Theme.Faint,
+                    new RectangleF(card.X + 14, card.Bottom - 20, w - 28, 14), StringAlignment.Near,
+                    StringAlignment.Center);
+            }
+        }
+
+        /// <summary>目录直接子文件里出现最多的三种类型，用于补充目录描述。</summary>
+        private static string MainKinds(MapNode node)
+        {
+            if (node.Children == null) return "";
+            Dictionary<string, int> count = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                MapNode c = node.Children[i];
+                if (c.IsDir || string.IsNullOrEmpty(c.KindKey)) continue;
+                int n;
+                count.TryGetValue(c.KindKey, out n);
+                count[c.KindKey] = n + 1;
+            }
+            if (count.Count == 0) return "";
+            List<KeyValuePair<string, int>> list = new List<KeyValuePair<string, int>>();
+            foreach (KeyValuePair<string, int> kv in count) list.Add(kv);
+            list.Sort(delegate(KeyValuePair<string, int> a, KeyValuePair<string, int> b)
+            {
+                if (b.Value != a.Value) return b.Value - a.Value;
+                return string.Compare(a.Key, b.Key, StringComparison.Ordinal);
+            });
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < list.Count && i < 3; i++)
+            {
+                if (i > 0) sb.Append(" · ");
+                sb.Append(Loc.T(FileJudge.NameKey(list[i].Key)));
+                if (list[i].Value > 1) sb.Append(" ×").Append(list[i].Value);
+            }
+            return sb.ToString();
+        }
+
+        private static string ModifiedText(MapNode node)
+        {
+            try
+            {
+                DateTime t = node.IsDir ? Directory.GetLastWriteTime(node.Path) : File.GetLastWriteTime(node.Path);
+                if (t.Year < 1980) return "";
+                return t.ToString("yyyy-MM-dd HH:mm");
+            }
+            catch
+            {
+                return "";
             }
         }
 
