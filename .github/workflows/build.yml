@@ -1,0 +1,27 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build single-file exe
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1
+
+      - name: Self test (file map)
+        shell: powershell
+        run: .\dist\CleanC.exe --filetest --out filetest.json
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CleanC
+          path: dist/*

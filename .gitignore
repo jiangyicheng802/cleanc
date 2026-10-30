@@ -1,0 +1,11 @@
+_artifacts/
+.trae/
+.screenshots/
+.workbuddy/
+*.log
+*.zip
+bin/
+obj/
+*.user
+*.suo
+.vs/
