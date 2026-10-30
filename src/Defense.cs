@@ -242,6 +242,7 @@ namespace CleanC
     public static class IntegritySurvey
     {
         private const string IfeoKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options";
+        private const string IfeoKey32 = @"SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options";
         private const string BaselineHeader = "CleanC defense baseline v1";
 
         public static readonly string[] SystemFiles = BuildSystemFiles();
@@ -449,33 +450,62 @@ namespace CleanC
         private static Dictionary<string, string> ReadIfeo()
         {
             Dictionary<string, string> map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            try
+            string[] roots = { IfeoKey, IfeoKey32 };
+            for (int r = 0; r < roots.Length; r++)
             {
-                using (RegistryKey k = Registry.LocalMachine.OpenSubKey(IfeoKey, false))
+                try
                 {
-                    if (k == null) return map;
-                    string[] names = k.GetSubKeyNames();
-                    for (int i = 0; i < names.Length; i++)
+                    using (RegistryKey k = Registry.LocalMachine.OpenSubKey(roots[r], false))
                     {
-                        try
+                        if (k == null) continue;
+                        string[] names = k.GetSubKeyNames();
+                        for (int i = 0; i < names.Length; i++)
                         {
-                            using (RegistryKey sub = k.OpenSubKey(names[i], false))
+                            try
                             {
-                                if (sub == null) continue;
-                                object d = sub.GetValue("Debugger", null);
-                                if (d is string && ((string)d).Trim().Length > 0) map[names[i]] = (string)d;
+                                using (RegistryKey sub = k.OpenSubKey(names[i], false))
+                                {
+                                    if (sub == null) continue;
+                                    object d = sub.GetValue("Debugger", null);
+                                    if (d is string && ((string)d).Trim().Length > 0) map[names[i]] = (string)d;
+                                }
                             }
-                        }
-                        catch
-                        {
+                            catch
+                            {
+                            }
                         }
                     }
                 }
-            }
-            catch
-            {
+                catch
+                {
+                }
             }
             return map;
+        }
+
+        private static string IfeoRootFor(string name)
+        {
+            string[] roots = { IfeoKey, IfeoKey32 };
+            for (int i = 0; i < roots.Length; i++)
+            {
+                try
+                {
+                    using (RegistryKey k = Registry.LocalMachine.OpenSubKey(roots[i], false))
+                    {
+                        if (k == null) continue;
+                        using (RegistryKey sub = k.OpenSubKey(name, false))
+                        {
+                            if (sub == null) continue;
+                            object d = sub.GetValue("Debugger", null);
+                            if (d is string && ((string)d).Trim().Length > 0) return roots[i];
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+            return IfeoKey;
         }
 
         // -------------------------------------------------------------- load/save
@@ -749,11 +779,12 @@ namespace CleanC
                     t.Kind = ThreatKind.Registry;
                     t.Severity = suspicious ? ThreatSeverity.High : ThreatSeverity.Medium;
                     t.Title = Loc.F("def.threat.ifeo", kv.Key);
-                    t.Detail = Loc.F("def.detail.ifeo", kv.Key, kv.Value, IfeoKey);
+                    string ifeoRoot = IfeoRootFor(kv.Key);
+                    t.Detail = Loc.F("def.detail.ifeo", kv.Key, kv.Value, ifeoRoot);
                     t.Solution = Loc.T("def.solution.ifeo");
                     t.Target = kv.Value;
                     t.Hive = "HKLM";
-                    t.KeyPath = IfeoKey + "\\" + kv.Key;
+                    t.KeyPath = ifeoRoot + "\\" + kv.Key;
                     t.ValueName = "Debugger";
                     t.Fix = ThreatFix.RemoveIfeo;
                     t.Id = "ifeo|" + kv.Key.ToLowerInvariant() + "|" + Fingerprint(kv.Value);
@@ -1069,7 +1100,7 @@ namespace CleanC
             {
                 using (RegistryKey k = Registry.LocalMachine.OpenSubKey(t.KeyPath, true))
                 {
-                    if (k == null) return false;
+                    if (k == null) return true;
                     k.DeleteValue("Debugger", false);
                 }
                 DefenseLog.Write("REG", "removed IFEO debugger: " + t.KeyPath);
