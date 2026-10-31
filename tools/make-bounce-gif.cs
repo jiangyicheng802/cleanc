@@ -11,18 +11,27 @@ namespace CleanC
     /// <summary>把启动动画第一段“C 蹦跳入场”单独导出为循环 GIF。</summary>
     public static class BounceGif
     {
-        private const int W = 480;
-        private const int H = 480;
+        private static int W = 480;
+        private static int H = 480;
+        private static float S = 1f;
         private const float Duration = 1280f;
         private const int StepMs = 20;
-        private const int HoldFrames = 8;
+        private static int HoldFrames = 8;
 
         public static int Main(string[] args)
         {
             string outPath = args != null && args.Length > 0 ? args[0] : @"_artifacts\C-bounce.gif";
+            bool pngMode = args != null && args.Length > 1 && args[1] == "png";
             try
             {
                 Theme.Set(ThemeMode.Light, false);
+                if (pngMode)
+                {
+                    W = 1080;
+                    H = 1080;
+                    S = W / 480f;
+                    HoldFrames = 20;
+                }
                 Bitmap bg = RenderBackground();
 
                 int count = (int)(Duration / StepMs) + 1;
@@ -36,13 +45,27 @@ namespace CleanC
                     frames.Add(RenderFrame(Duration, bg));
                 }
 
-                int[] palette = BuildPalette(frames, 256);
-                int[] map = BuildColorMap(palette);
-                WriteGif(outPath, frames, palette, map);
+                if (pngMode)
+                {
+                    string dir = outPath;
+                    Directory.CreateDirectory(dir);
+                    for (int i = 0; i < frames.Count; i++)
+                    {
+                        frames[i].Save(Path.Combine(dir, "f" + i.ToString("D3") + ".png"),
+                            ImageFormat.Png);
+                    }
+                    Console.WriteLine("saved " + frames.Count + " png frames to " + Path.GetFullPath(dir));
+                }
+                else
+                {
+                    int[] palette = BuildPalette(frames, 256);
+                    int[] map = BuildColorMap(palette);
+                    WriteGif(outPath, frames, palette, map);
+                    Console.WriteLine("saved " + Path.GetFullPath(outPath) + " (" + frames.Count + " frames)");
+                }
 
                 for (int i = 0; i < frames.Count; i++) frames[i].Dispose();
                 bg.Dispose();
-                Console.WriteLine("saved " + Path.GetFullPath(outPath) + " (" + frames.Count + " frames)");
                 return 0;
             }
             catch (Exception ex)
@@ -66,25 +89,27 @@ namespace CleanC
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.Clear(Theme.Bg);
-                Radial(g, W / 2f, H / 2f - 30, 300f, Theme.Blue, 24);
-                Radial(g, W / 2f - 150, H / 2f - 120, 220f, Theme.Violet, 14);
-                Radial(g, W / 2f + 160, H / 2f + 80, 230f, Theme.Cyan, 12);
+                Glow(g, W / 2f, H / 2f - 30 * S, 190 * S, Theme.Blue, 20);
+                Glow(g, W / 2f - 110 * S, H / 2f - 90 * S, 150 * S, Theme.Violet, 12);
+                Glow(g, W / 2f + 120 * S, H / 2f + 70 * S, 160 * S, Theme.Cyan, 10);
             }
             return bmp;
         }
 
-        private static void Radial(Graphics g, float cx, float cy, float r, Color c, int alpha)
+        /// <summary>平滑径向光晕（路径渐变，避免同心圆色阶）。</summary>
+        private static void Glow(Graphics g, float cx, float cy, float r, Color c, int alpha)
         {
             if (r <= 1f || alpha <= 0) return;
-            int layers = 20;
-            for (int i = layers - 1; i >= 0; i--)
+            using (GraphicsPath path = new GraphicsPath())
             {
-                int a = (int)(alpha * (1f - (float)i / layers) / 2f);
-                if (a < 2) continue;
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(a, c)))
+                path.AddEllipse(cx - r, cy - r, r * 2f, r * 2f);
+                using (PathGradientBrush b = new PathGradientBrush(path))
                 {
-                    float rr = r * (i + 1f) / layers;
-                    g.FillEllipse(b, cx - rr, cy - rr, rr * 2f, rr * 2f);
+                    b.CenterPoint = new PointF(cx, cy);
+                    b.CenterColor = Color.FromArgb(alpha, c);
+                    b.SurroundColors = new Color[] { Color.FromArgb(0, c) };
+                    b.FocusScales = new PointF(0f, 0f);
+                    g.FillPath(b, path);
                 }
             }
         }
@@ -99,7 +124,8 @@ namespace CleanC
                 g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 g.DrawImageUnscaled(bg, 0, 0);
 
-                const float K = 2.15f;
+                const float K0 = 2.15f;
+                float K = K0 * S;
                 float cx = W / 2f;
                 float groundY = H * 0.70f;
                 float hp = Seg(t, 0f, 900f);
@@ -124,12 +150,11 @@ namespace CleanC
                     int sa = (int)((46 - 26 * ground) * Math.Min(1f, hp * 3f));
                     using (SolidBrush sh = new SolidBrush(Color.FromArgb(Math.Max(0, sa), Theme.Blue)))
                     {
-                        g.FillEllipse(sh, cX - sw / 2f, groundY - 7f, sw, 14f);
+                        g.FillEllipse(sh, cX - sw / 2f, groundY - 5 * S, sw, 10 * S);
                     }
                 }
                 if (hp > 0f)
                 {
-                    Radial(g, cX, cY, cSize * 0.9f, Theme.Blue, 26);
                     GraphicsState cs = g.Save();
                     g.TranslateTransform(cX, cY);
                     g.RotateTransform(rot);
@@ -273,8 +298,19 @@ namespace CleanC
         private static int[] BuildColorMap(int[] palette)
         {
             int[] map = new int[32768];
-            for (int i = 0; i < map.Length; i++) map[i] = -1;
+            for (int i = 0; i < map.Length; i++)
+            {
+                int r = Channel(i, 2);
+                int g = Channel(i, 1);
+                int b = Channel(i, 0);
+                map[i] = Nearest(palette, Color.FromArgb(r, g, b));
+            }
             return map;
+        }
+
+        private static int Clamp(int v)
+        {
+            return v < 0 ? 0 : (v > 255 ? 255 : v);
         }
 
         private static int Nearest(int[] palette, Color c)
@@ -297,9 +333,16 @@ namespace CleanC
             return best;
         }
 
+        /// <summary>Floyd–Steinberg 抖动量化，让光晕渐变在 256 色 GIF 里依然平滑。</summary>
         private static byte[] Quantize(Bitmap bmp, int[] palette, int[] map)
         {
             byte[] idx = new byte[W * H];
+            float[] cr = new float[W + 2];
+            float[] cg = new float[W + 2];
+            float[] cb = new float[W + 2];
+            float[] nr = new float[W + 2];
+            float[] ng = new float[W + 2];
+            float[] nb = new float[W + 2];
             BitmapData data = bmp.LockBits(new Rectangle(0, 0, W, H), ImageLockMode.ReadOnly,
                 PixelFormat.Format32bppRgb);
             unsafe
@@ -308,21 +351,42 @@ namespace CleanC
                 int stride = data.Stride;
                 for (int y = 0; y < H; y++)
                 {
+                    for (int i = 0; i < W + 2; i++)
+                    {
+                        nr[i] = 0f;
+                        ng[i] = 0f;
+                        nb[i] = 0f;
+                    }
                     byte* row = p + y * stride;
                     for (int x = 0; x < W; x++)
                     {
-                        int b = row[x * 4];
-                        int g = row[x * 4 + 1];
-                        int r = row[x * 4 + 2];
-                        int bin = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-                        int v = map[bin];
-                        if (v < 0)
-                        {
-                            v = Nearest(palette, Color.FromArgb(r, g, b));
-                            map[bin] = v;
-                        }
+                        int b = Clamp((int)(row[x * 4] + cb[x + 1]));
+                        int g = Clamp((int)(row[x * 4 + 1] + cg[x + 1]));
+                        int r = Clamp((int)(row[x * 4 + 2] + cr[x + 1]));
+                        int v = map[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)];
                         idx[y * W + x] = (byte)v;
+                        int pr = (palette[v] >> 16) & 0xFF;
+                        int pg = (palette[v] >> 8) & 0xFF;
+                        int pb = palette[v] & 0xFF;
+                        float er = r - pr;
+                        float eg = g - pg;
+                        float eb = b - pb;
+                        cr[x + 2] += er * 0.4375f;
+                        cg[x + 2] += eg * 0.4375f;
+                        cb[x + 2] += eb * 0.4375f;
+                        nr[x] += er * 0.1875f;
+                        ng[x] += eg * 0.1875f;
+                        nb[x] += eb * 0.1875f;
+                        nr[x + 1] += er * 0.3125f;
+                        ng[x + 1] += eg * 0.3125f;
+                        nb[x + 1] += eb * 0.3125f;
+                        nr[x + 2] += er * 0.0625f;
+                        ng[x + 2] += eg * 0.0625f;
+                        nb[x + 2] += eb * 0.0625f;
                     }
+                    float[] t0 = cr; cr = nr; nr = t0;
+                    t0 = cg; cg = ng; ng = t0;
+                    t0 = cb; cb = nb; nb = t0;
                 }
             }
             bmp.UnlockBits(data);
