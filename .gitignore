@@ -9,3 +9,7 @@ obj/
 *.user
 *.suo
 .vs/
+/CleanC-poster-*.png
+/CleanC-github-cover.png
+/C-bounce.gif
+/C-bounce.mp4

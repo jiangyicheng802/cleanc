@@ -6,6 +6,11 @@
 
 ![主界面](docs/main.png)
 
+<p align="center">
+  <img src="docs/poster-3x4.png" width="260" alt="海报">
+  <img src="docs/poster-4x3.png" width="420" alt="海报">
+</p>
+
 - 单文件 exe（约 468 KB），Windows 10/11 自带 .NET Framework 4.8 即可运行
 - 三套外观：浅色 / 深色 / 金色，标题栏右上角一键循环，首次运行跟随系统，选择记入 `settings.ini`
 - 首次运行语言跟随系统：简体中文 / 繁體中文 / English，可随时在标题栏切换
